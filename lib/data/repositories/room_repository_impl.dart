@@ -166,6 +166,21 @@ class RoomRepositoryImpl implements RoomRepository {
   }
 
   @override
+  Future<List<PlayerModel>> getPlayers(String roomCode) async {
+    try {
+      final data = await _supabaseService.fetchList(
+        AppConstants.playersTable,
+        matchField: 'room_code',
+        matchValue: roomCode.trim().toUpperCase(),
+      );
+      return data.map(PlayerModel.fromJson).toList();
+    } catch (e) {
+      if (e is Failure) rethrow;
+      throw ServerFailure('Failed to fetch players: $e');
+    }
+  }
+
+  @override
   Stream<RoomModel?> watchRoom(String roomCode) {
     return _supabaseService
         .streamRoom(roomCode.trim().toUpperCase())

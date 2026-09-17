@@ -27,6 +27,9 @@ abstract interface class RoomRepository {
   /// Retrieves a room by its alphanumeric [roomCode].
   Future<RoomModel?> getRoom(String roomCode);
 
+  /// Retrieves the list of players currently in a room.
+  Future<List<PlayerModel>> getPlayers(String roomCode);
+
   /// Streams realtime updates for a room.
   Stream<RoomModel?> watchRoom(String roomCode);
 

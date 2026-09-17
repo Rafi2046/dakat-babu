@@ -315,6 +315,16 @@ class SupabaseService {
       for (final room in _mockRooms.values) {
         if (room[matchField] == matchValue) return room;
       }
+    } else if (table == AppConstants.roundsTable) {
+      for (final round in _mockRounds.values) {
+        if (round[matchField] == matchValue) return round;
+      }
+    } else if (table == AppConstants.playersTable) {
+      for (final players in _mockPlayers.values) {
+        for (final p in players) {
+          if (p[matchField] == matchValue) return p;
+        }
+      }
     }
     return null;
   }

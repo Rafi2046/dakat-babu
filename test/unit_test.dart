@@ -46,6 +46,9 @@ class FakeRoomRepository implements RoomRepository {
   Future<void> setPlayerReady({required String playerId, required bool isReady}) async {}
 
   @override
+  Future<List<PlayerModel>> getPlayers(String roomCode) async => [];
+
+  @override
   Stream<List<PlayerModel>> watchPlayers(String roomCode) => Stream.value([]);
 
   @override

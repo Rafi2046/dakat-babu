@@ -11,15 +11,17 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/utils/extensions.dart';
+import '../../../data/models/player_model.dart';
 import '../../../data/models/round_model.dart';
 import '../../viewmodels/game_round_viewmodel.dart';
 import '../../widgets/animated_living_background.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/flip_role_card.dart';
 import '../../widgets/game_card.dart';
-import '../../widgets/player_tile.dart';
 import '../../widgets/role_art.dart';
 
-/// The active game round screen featuring secret role unmasking and Police interrogation.
+/// The active game round screen featuring secret 3D role flip unmasking,
+/// Royal Proclamation, Police suspect selection grid, and non-police waiting radar.
 class GameRoundScreen extends ConsumerStatefulWidget {
   final String roomCode;
 
@@ -36,9 +38,11 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen> {
         ref.watch(supabaseServiceProvider).currentUserId;
     final roundState = ref.watch(gameRoundViewModelProvider(widget.roomCode));
 
-    // When round completes, automatically route all players to results screen
+    // When round completes or police submits guess, route all players to results screen
     ref.listen<GameRoundState>(gameRoundViewModelProvider(widget.roomCode), (prev, current) {
-      if (current.round?.status == RoundStatus.completed) {
+      final isCompleted = current.round?.status == RoundStatus.completed ||
+          current.round?.policeGuessPlayerId != null;
+      if (isCompleted) {
         context.go(AppRoutes.resultsPath(widget.roomCode));
       }
       if (current.errorMessage != null &&
@@ -50,6 +54,7 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen> {
     final myPlayer = roundState.myPlayer(currentUserId);
     final myRole = myPlayer?.role;
     final isPolice = roundState.isPolice(currentUserId);
+    final isRaja = myRole == GameRole.raja;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -69,12 +74,12 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen> {
             decoration: BoxDecoration(
               color: roundState.remainingSeconds <= 10
                   ? AppColors.error.withValues(alpha: 0.25)
-                  : AppColors.glassFill,
+                  : const Color(0x35000000),
               borderRadius: AppRadius.pillRadius,
               border: Border.all(
                 color: roundState.remainingSeconds <= 10
                     ? AppColors.error
-                    : AppColors.glassBorder,
+                    : Colors.white.withValues(alpha: 0.12),
               ),
               boxShadow: [
                 if (roundState.remainingSeconds <= 10)
@@ -89,19 +94,19 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen> {
               children: [
                 Icon(
                   PhosphorIcons.timer(PhosphorIconsStyle.bold),
-                  size: 16,
+                  size: 15,
                   color: roundState.remainingSeconds <= 10
                       ? AppColors.error
                       : AppColors.textLightPrimary,
                 ),
-                AppSpacing.gapHXs,
+                const SizedBox(width: 5),
                 Text(
                   '${roundState.remainingSeconds}s',
                   style: AppTextStyles.button(
                     color: roundState.remainingSeconds <= 10
                         ? AppColors.error
                         : AppColors.textLightPrimary,
-                  ),
+                  ).copyWith(fontSize: 13, fontWeight: FontWeight.w700),
                 ),
               ],
             ),
@@ -111,204 +116,455 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen> {
       body: AnimatedLivingBackground(
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: AppSpacing.screenPadding,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md + 2,
+              vertical: AppSpacing.sm,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                AppSpacing.gapVSm,
+                const SizedBox(height: 6),
 
-                // --- Secret Role Card (Tap to Peek) ---
-                GestureDetector(
-                  onTap: () => ref
+                // --- 1. Secret Role Reveal Flip Card ---
+                FlipRoleCard(
+                  role: myRole,
+                  isRevealed: roundState.isCardRevealed,
+                  onToggle: () => ref
                       .read(gameRoundViewModelProvider(widget.roomCode).notifier)
                       .toggleCardReveal(),
-                  child: GameCard(
-                    isGlass: true,
-                    glowColor: roundState.isCardRevealed && myRole != null
-                        ? myRole.color.withValues(alpha: 0.35)
-                        : AppColors.primaryGlow,
-                    borderColor: roundState.isCardRevealed && myRole != null
-                        ? myRole.color
-                        : AppColors.primaryLight,
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Stack(
-                      children: [
-                        // Watermark pattern when revealed
-                        if (roundState.isCardRevealed && myRole != null)
-                          Positioned.fill(
-                            child: CustomPaint(
-                              painter: RolePatternPainter(role: myRole),
-                            ),
-                          ),
-
-                        Column(
-                          children: [
-                            if (roundState.isCardRevealed && myRole != null)
-                              RoleVectorIcon(
-                                role: myRole,
-                                size: 56,
-                                hasGlow: true,
-                              )
-                            else
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.primary.withValues(alpha: 0.15),
-                                ),
-                                child: Icon(
-                                  PhosphorIcons.eyeSlash(PhosphorIconsStyle.bold),
-                                  size: 36,
-                                  color: AppColors.primaryLight,
-                                ),
-                              ),
-                            AppSpacing.gapVSm,
-                            Text(
-                              roundState.isCardRevealed && myRole != null
-                                  ? myRole.displayName.toUpperCase()
-                                  : 'TAP TO VIEW SECRET ROLE',
-                              style: AppTextStyles.roleTitle(
-                                color: roundState.isCardRevealed && myRole != null
-                                    ? myRole.color
-                                    : AppColors.textLightPrimary,
-                              ).copyWith(fontSize: 24),
-                            ),
-                            AppSpacing.gapVXs,
-                            Text(
-                              roundState.isCardRevealed && myRole != null
-                                  ? myRole.instructions
-                                  : 'Tap to peek. Keep your screen hidden from rivals!',
-                              style: AppTextStyles.bodyMedium(
-                                color: roundState.isCardRevealed
-                                    ? Colors.white.withValues(alpha: 0.9)
-                                    : AppColors.textLightSecondary,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
 
-                AppSpacing.gapVLg,
+                const SizedBox(height: 14),
 
-                // --- Court Proclamation (Who is Raja / Police) ---
-                GameCard(
-                  isGlass: true,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            PhosphorIcons.megaphone(PhosphorIconsStyle.fill),
-                            size: 16,
-                            color: AppColors.raja,
-                          ),
-                          AppSpacing.gapHXs,
-                          Text(
-                            'ROYAL PROCLAMATION',
-                            style: AppTextStyles.caption(color: AppColors.textLightSecondary)
-                                .copyWith(fontWeight: FontWeight.w800, letterSpacing: 0.8),
-                          ),
-                        ],
-                      ),
-                      AppSpacing.gapVSm,
-                      if (roundState.rajaPlayer != null)
-                        Row(
-                          children: [
-                            const RoleVectorIcon(role: GameRole.raja, size: 22, hasGlow: false),
-                            AppSpacing.gapHSm,
-                            Text(
-                              '👑 Raja: ${roundState.rajaPlayer!.name} (Declared)',
-                              style: AppTextStyles.bodyLarge(color: AppColors.raja)
-                                  .copyWith(fontWeight: FontWeight.w700),
-                            ),
-                          ],
-                        ),
-                      AppSpacing.gapVXs,
-                      if (roundState.policePlayer != null)
-                        Row(
-                          children: [
-                            const RoleVectorIcon(role: GameRole.police, size: 22, hasGlow: false),
-                            AppSpacing.gapHSm,
-                            Text(
-                              '👮 Police: ${roundState.policePlayer!.name} (Investigating)',
-                              style: AppTextStyles.bodyLarge(color: AppColors.police)
-                                  .copyWith(fontWeight: FontWeight.w700),
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
-                ),
+                // --- 2. Royal Proclamation Banner ---
+                _buildRoyalProclamation(roundState, isRaja: isRaja),
 
-                AppSpacing.gapVLg,
+                const SizedBox(height: 16),
 
-                // --- Suspect Accusation Section ---
-                Text(
-                  isPolice ? 'SELECT THE CHOR (THIEF):' : 'SUSPECTS UNDER QUESTIONING:',
-                  style: AppTextStyles.heading3().copyWith(fontWeight: FontWeight.w800),
-                ),
-                AppSpacing.gapVSm,
-
-                ...roundState.suspects.map((suspect) {
-                  final isSelected = roundState.selectedSuspectId == suspect.id;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: PlayerTile(
-                      player: suspect,
-                      isSelected: isSelected,
-                      onTap: isPolice
-                          ? () {
-                              ref
-                                  .read(gameRoundViewModelProvider(widget.roomCode).notifier)
-                                  .selectSuspect(suspect.id);
-                            }
-                          : null,
-                    ),
-                  );
-                }),
-
-                AppSpacing.gapVLg,
-
-                // --- Accusation Submission Button ---
+                // --- 3. Role-Specific Phase Interface ---
                 if (isPolice)
-                  CustomButton(
-                    label: 'ACCUSE AS CHOR!',
-                    variant: ButtonVariant.danger,
-                    leading: Icon(
-                      PhosphorIcons.gavel(PhosphorIconsStyle.fill),
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    isLoading: roundState.isSubmittingGuess,
-                    onPressed: roundState.selectedSuspectId != null
-                        ? () async {
-                            await ref
-                                .read(gameRoundViewModelProvider(widget.roomCode).notifier)
-                                .submitGuess();
-                          }
-                        : null,
-                  )
+                  _buildPoliceInterrogationSection(roundState, currentUserId)
                 else
-                  GameCard(
-                    isGlass: true,
-                    backgroundColor: AppColors.glassFill.withValues(alpha: 0.3),
-                    child: Center(
-                      child: Text(
-                        'Police is questioning the suspects... Keep a poker face!',
-                        style: AppTextStyles.bodyMedium(color: AppColors.textLightSecondary),
-                        textAlign: TextAlign.center,
+                  _buildNonPoliceWaitingSection(roundState, myRole),
+
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Royal Proclamation Card declaring the Raja to everyone,
+  /// and showing Police identity to the Raja per game rules.
+  Widget _buildRoyalProclamation(GameRoundState state, {required bool isRaja}) {
+    final raja = state.rajaPlayer;
+    final police = state.policePlayer;
+
+    return GameCard(
+      isGlass: true,
+      borderColor: AppColors.raja.withValues(alpha: 0.25),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                PhosphorIcons.megaphone(PhosphorIconsStyle.fill),
+                size: 15,
+                color: AppColors.raja,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'ROYAL PROCLAMATION',
+                style: AppTextStyles.caption(color: AppColors.raja).copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Raja identity announced to all
+          Row(
+            children: [
+              const RoleVectorIcon(role: GameRole.raja, size: 20, hasGlow: false),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '👑 Raja: ${raja?.name ?? 'Declaring...'} (Sovereign)',
+                  style: AppTextStyles.bodyMedium(color: AppColors.raja).copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // If current user is Raja, they also see who the Police is
+          if (isRaja && police != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const RoleVectorIcon(role: GameRole.police, size: 20, hasGlow: false),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '👮 Your Inspector: ${police.name} (Investigating)',
+                    style: AppTextStyles.bodyMedium(color: AppColors.police).copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Police Interrogation UI with 3-player grid and accusation submit button.
+  Widget _buildPoliceInterrogationSection(
+    GameRoundState state,
+    String? currentUserId,
+  ) {
+    // Show the other 3 players in the room
+    final otherPlayers = state.players.where((p) => p.id != currentUserId).toList();
+    final selectedSuspect = otherPlayers.cast<PlayerModel?>().firstWhere(
+          (p) => p?.id == state.selectedSuspectId,
+          orElse: () => null,
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(
+              PhosphorIcons.crosshair(PhosphorIconsStyle.bold),
+              color: AppColors.error,
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'SELECT THE CHOR (THIEF):',
+              style: AppTextStyles.heading3().copyWith(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Tap the courtier you deduce has stolen the treasure.',
+          style: AppTextStyles.caption(color: AppColors.textLightSecondary),
+        ),
+        const SizedBox(height: 12),
+
+        // Grid of the other 3 players
+        GridView.count(
+          crossAxisCount: 3,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+          childAspectRatio: 0.88,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: otherPlayers.map((player) {
+            final isRaja = player.id == state.round?.rajaPlayerId;
+            final isSelected = state.selectedSuspectId == player.id;
+
+            return _buildSuspectGridTile(
+              player: player,
+              isRaja: isRaja,
+              isSelected: isSelected,
+              onTap: isRaja
+                  ? null
+                  : () {
+                      ref
+                          .read(gameRoundViewModelProvider(widget.roomCode).notifier)
+                          .selectSuspect(player.id);
+                    },
+            );
+          }).toList(),
+        ),
+
+        const SizedBox(height: 18),
+
+        // Accusation submission button
+        CustomButton(
+          label: selectedSuspect != null
+              ? 'Accuse ${selectedSuspect.name} as Chor!'
+              : 'Select a Suspect to Accuse',
+          variant: ButtonVariant.danger,
+          leading: Icon(
+            PhosphorIcons.gavel(PhosphorIconsStyle.fill),
+            color: Colors.white,
+            size: 18,
+          ),
+          isLoading: state.isSubmittingGuess,
+          onPressed: selectedSuspect != null
+              ? () async {
+                  await ref
+                      .read(gameRoundViewModelProvider(widget.roomCode).notifier)
+                      .submitGuess();
+                }
+              : null,
+        ),
+      ],
+    );
+  }
+
+  /// Single suspect grid tile for Police interrogation.
+  Widget _buildSuspectGridTile({
+    required PlayerModel player,
+    required bool isRaja,
+    required bool isSelected,
+    required VoidCallback? onTap,
+  }) {
+    Color borderColor;
+    Color bgColor;
+
+    if (isRaja) {
+      borderColor = AppColors.raja.withValues(alpha: 0.3);
+      bgColor = const Color(0x28000000);
+    } else if (isSelected) {
+      borderColor = AppColors.error;
+      bgColor = AppColors.error.withValues(alpha: 0.15);
+    } else {
+      borderColor = Colors.white.withValues(alpha: 0.12);
+      bgColor = const Color(0x35141926);
+    }
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor, width: isSelected ? 1.8 : 1.0),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.error.withValues(alpha: 0.35),
+                    blurRadius: 12,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Avatar
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: isRaja
+                      ? AppColors.raja.withValues(alpha: 0.25)
+                      : (isSelected
+                          ? AppColors.error.withValues(alpha: 0.3)
+                          : AppColors.primary.withValues(alpha: 0.2)),
+                  child: Text(
+                    player.name.initials,
+                    style: AppTextStyles.bodyMedium(
+                      color: isRaja ? AppColors.raja : Colors.white,
+                    ).copyWith(fontWeight: FontWeight.w800, fontSize: 13),
+                  ),
+                ),
+                if (isSelected)
+                  Positioned(
+                    right: -3,
+                    bottom: -3,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.error,
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        size: 11,
+                        color: Colors.white,
                       ),
                     ),
                   ),
               ],
             ),
-          ),
+            const SizedBox(height: 7),
+
+            // Name
+            Text(
+              player.name,
+              style: AppTextStyles.bodyMedium().copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 3),
+
+            // Tag
+            if (isRaja)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.raja.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '👑 King (Immune)',
+                  style: AppTextStyles.caption(color: AppColors.raja).copyWith(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 9,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              )
+            else if (isSelected)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'SUSPECT',
+                  style: AppTextStyles.caption(color: AppColors.error).copyWith(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 9,
+                  ),
+                ),
+              )
+            else
+              Text(
+                'Tap to suspect',
+                style: AppTextStyles.caption(
+                  color: AppColors.textLightMuted,
+                ).copyWith(fontSize: 10),
+              ),
+          ],
         ),
+      ),
+    );
+  }
+
+  /// Non-Police Waiting Screen with animated interrogation radar.
+  Widget _buildNonPoliceWaitingSection(GameRoundState state, GameRole? role) {
+    final policeName = state.policePlayer?.name ?? 'Police';
+
+    String advice;
+    switch (role) {
+      case GameRole.mantri:
+        advice = 'You are the Minister! Look calm & innocent so the Police doesn\'t falsely accuse you.';
+        break;
+      case GameRole.chor:
+        advice = 'You are the Thief! Maintain a poker face. If Police suspects the Minister, you steal 500 points!';
+        break;
+      case GameRole.raja:
+        advice = 'You are the King! Observe your court silently as your Inspector investigates.';
+        break;
+      default:
+        advice = 'Maintain your poker face and wait for the Police to announce the verdict.';
+    }
+
+    return GameCard(
+      isGlass: true,
+      borderColor: Colors.white.withValues(alpha: 0.1),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Column(
+        children: [
+          // Animated Investigation Radar
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.85, end: 1.15),
+            duration: const Duration(seconds: 2),
+            curve: Curves.easeInOut,
+            builder: (context, scale, child) {
+              return Transform.scale(
+                scale: scale,
+                child: child,
+              );
+            },
+            child: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.police.withValues(alpha: 0.15),
+                border: Border.all(
+                  color: AppColors.police.withValues(alpha: 0.45),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.policeGlow,
+                    blurRadius: 20,
+                  ),
+                ],
+              ),
+              child: Icon(
+                PhosphorIcons.magnifyingGlass(PhosphorIconsStyle.bold),
+                size: 28,
+                color: AppColors.police,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Status Heading
+          Text(
+            'Police is Thinking...',
+            style: AppTextStyles.heading2().copyWith(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+
+          // Interrogation note
+          Text(
+            '👮 $policeName is interrogating the court suspects.',
+            style: AppTextStyles.bodyMedium(color: AppColors.police).copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 13.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+
+          // Role specific psychology advice
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0x30000000),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
+            ),
+            child: Text(
+              advice,
+              style: AppTextStyles.caption(
+                color: Colors.white.withValues(alpha: 0.8),
+              ).copyWith(fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
       ),
     );
   }

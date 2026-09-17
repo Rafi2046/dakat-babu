@@ -119,6 +119,13 @@ class ResultsViewModel extends StateNotifier<ResultsState> {
         if (mounted) state = state.copyWith(errorMessage: err.toString());
       },
     );
+
+    // Initial fetch to ensure players are available immediately
+    _roomRepository.getPlayers(_roomCode).then((players) {
+      if (mounted && state.players.isEmpty) {
+        state = state.copyWith(players: players);
+      }
+    }).catchError((_) {});
   }
 
   /// Host triggers the next round of the match.
@@ -128,12 +135,17 @@ class ResultsViewModel extends StateNotifier<ResultsState> {
 
     state = state.copyWith(isAdvancing: true, clearError: true);
     try {
+      var players = state.players;
+      if (players.length != AppConstants.maxPlayers) {
+        players = await _roomRepository.getPlayers(_roomCode);
+      }
+
       await _assignRolesUseCase(
         roomCode: _roomCode,
-        players: state.players,
+        players: players,
         roundNumber: nextRoundNumber,
       );
-      state = state.copyWith(isAdvancing: false);
+      state = state.copyWith(isAdvancing: false, players: players);
       return true;
     } catch (e) {
       final message = e is Failure ? e.message : e.toString();
