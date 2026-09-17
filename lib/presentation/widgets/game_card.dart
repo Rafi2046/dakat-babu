@@ -1,10 +1,11 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_radius.dart';
 import '../../core/constants/app_spacing.dart';
 
-/// A card container with subtle borders and optional accent gradient glowing border.
+/// A card container supporting frosted glassmorphism, glowing shadows, and interactive ripples.
 class GameCard extends StatelessWidget {
   /// Internal child widget.
   final Widget child;
@@ -21,6 +22,12 @@ class GameCard extends StatelessWidget {
   /// Optional gradient background (e.g. for role cards).
   final Gradient? gradient;
 
+  /// Optional ambient glow color behind the card.
+  final Color? glowColor;
+
+  /// Whether to apply BackdropFilter frosted glassmorphism effect.
+  final bool isGlass;
+
   /// Callback when tapped.
   final VoidCallback? onTap;
 
@@ -31,31 +38,52 @@ class GameCard extends StatelessWidget {
     this.backgroundColor,
     this.borderColor,
     this.gradient,
+    this.glowColor,
+    this.isGlass = false,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    Widget cardContent = Container(
+    final effectiveBorder = borderColor ?? (isGlass ? AppColors.glassBorder : AppColors.borderDark);
+    final effectiveBg = backgroundColor ?? (isGlass ? AppColors.glassFill : AppColors.surfaceDark);
+
+    Widget innerBox = Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: gradient == null ? (backgroundColor ?? AppColors.surfaceDark) : null,
+        color: gradient == null ? effectiveBg : null,
         gradient: gradient,
         borderRadius: AppRadius.cardRadius,
         border: Border.all(
-          color: borderColor ?? AppColors.borderDark,
+          color: effectiveBorder,
           width: 1.0,
         ),
         boxShadow: [
+          if (glowColor != null)
+            BoxShadow(
+              color: glowColor!.withValues(alpha: 0.16),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 10,
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: child,
     );
+
+    if (isGlass) {
+      innerBox = ClipRRect(
+        borderRadius: AppRadius.cardRadius,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: innerBox,
+        ),
+      );
+    }
 
     if (onTap != null) {
       return Material(
@@ -64,11 +92,11 @@ class GameCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: AppRadius.cardRadius,
-          child: cardContent,
+          child: innerBox,
         ),
       );
     }
 
-    return cardContent;
+    return innerBox;
   }
 }

@@ -10,7 +10,8 @@ void main() {
         child: DakatBabuApp(),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
     // Verify app brand and mode options are rendered
     expect(find.text('DakatBabu'), findsOneWidget);

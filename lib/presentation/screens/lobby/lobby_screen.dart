@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
@@ -13,6 +14,7 @@ import '../../../core/routes/app_routes.dart';
 import '../../../core/utils/extensions.dart';
 import '../../../data/models/room_model.dart';
 import '../../viewmodels/lobby_viewmodel.dart';
+import '../../widgets/animated_living_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/game_card.dart';
 import '../../widgets/player_tile.dart';
@@ -49,145 +51,221 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     final localPlayer = lobbyState.currentPlayer(currentUserId);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text('Room Lobby', style: AppTextStyles.heading2()),
+        title: Text('Royal Lobby', style: AppTextStyles.heading2()),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(PhosphorIcons.arrowLeft(PhosphorIconsStyle.bold)),
           onPressed: () => context.go(AppRoutes.home),
         ),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: AppSpacing.screenPadding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // --- Room Code Header Card ---
-              GameCard(
-                backgroundColor: AppColors.surfaceElevatedDark,
-                borderColor: AppColors.primary.withValues(alpha: 0.4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'ROOM CODE',
-                          style: AppTextStyles.caption(color: AppColors.textLightSecondary),
-                        ),
-                        AppSpacing.gapVXs,
-                        Text(
-                          widget.roomCode,
-                          style: AppTextStyles.heading1(color: AppColors.secondary),
-                        ),
-                      ],
-                    ),
-                    IconButton.filledTonal(
-                      icon: const Icon(Icons.copy, size: 20),
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(text: widget.roomCode));
-                        context.showSuccessSnackBar('Room code copied to clipboard!');
-                      },
-                    ),
-                  ],
-                ),
-              ),
+      body: AnimatedLivingBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: AppSpacing.screenPadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppSpacing.gapVSm,
 
-              AppSpacing.gapVLg,
-
-              // --- Player Count Header ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'PLAYERS (${lobbyState.players.length}/${AppConstants.maxPlayers})',
-                    style: AppTextStyles.heading3(),
+                // --- Frosted Glassmorphism Room Code Header Card ---
+                GameCard(
+                  isGlass: true,
+                  glowColor: AppColors.secondaryGlow,
+                  borderColor: AppColors.secondary.withValues(alpha: 0.4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.md,
                   ),
-                  Text(
-                    lobbyState.canStartGame ? 'READY TO PLAY' : 'WAITING FOR 4',
-                    style: AppTextStyles.caption(
-                      color: lobbyState.canStartGame ? AppColors.success : AppColors.warning,
-                    ),
-                  ),
-                ],
-              ),
-              AppSpacing.gapVSm,
-
-              // --- 4 Player Slots ---
-              Expanded(
-                child: ListView.separated(
-                  itemCount: AppConstants.maxPlayers,
-                  separatorBuilder: (context, index) => AppSpacing.gapVSm,
-                  itemBuilder: (context, index) {
-                    if (index < lobbyState.players.length) {
-                      final player = lobbyState.players[index];
-                      return PlayerTile(
-                        player: player,
-                        showReadyStatus: true,
-                      );
-                    }
-                    // Empty slot placeholder
-                    return Container(
-                      padding: AppSpacing.cardPadding,
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: AppColors.borderDark.withValues(alpha: 0.5),
-                          style: BorderStyle.solid,
-                        ),
-                        borderRadius: AppRadius.cardRadius,
-                      ),
-                      child: Row(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          CircleAvatar(
-                            radius: 20,
-                            backgroundColor: AppColors.surfaceElevatedDark,
-                            child: const Icon(Icons.person_outline, color: AppColors.textLightMuted),
+                          Row(
+                            children: [
+                              Icon(
+                                PhosphorIcons.broadcast(PhosphorIconsStyle.fill),
+                                size: 14,
+                                color: AppColors.secondary,
+                              ),
+                              AppSpacing.gapHXs,
+                              Text(
+                                'ROOM CODE',
+                                style: AppTextStyles.caption(color: AppColors.textLightSecondary)
+                                    .copyWith(fontWeight: FontWeight.w800, letterSpacing: 1.0),
+                              ),
+                            ],
                           ),
-                          AppSpacing.gapHMd,
+                          AppSpacing.gapVXs,
                           Text(
-                            'Waiting for player ${index + 1}...',
-                            style: AppTextStyles.bodyMedium(color: AppColors.textLightMuted),
+                            widget.roomCode,
+                            style: AppTextStyles.heroTitle(color: AppColors.secondary)
+                                .copyWith(fontSize: 34),
                           ),
                         ],
                       ),
-                    );
-                  },
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.secondary.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.secondary.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: IconButton(
+                          icon: Icon(
+                            PhosphorIcons.copy(PhosphorIconsStyle.bold),
+                            size: 22,
+                            color: AppColors.secondary,
+                          ),
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(text: widget.roomCode));
+                            context.showSuccessSnackBar('Room code copied to clipboard!');
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-              // --- Action Controls ---
-              if (isHost)
-                CustomButton(
-                  label: lobbyState.canStartGame
-                      ? 'START GAME (4/4 Ready)'
-                      : 'START GAME (${lobbyState.players.length}/4 Players Joined)',
-                  icon: Icons.play_arrow,
-                  isLoading: lobbyState.isStarting,
-                  onPressed: lobbyState.canStartGame
-                      ? () async {
-                          final started = await ref
-                              .read(lobbyViewModelProvider(widget.roomCode).notifier)
-                              .startGame();
-                          if (started && context.mounted) {
-                            context.go(AppRoutes.gameRoundPath(widget.roomCode));
-                          }
-                        }
-                      : null,
-                )
-              else if (localPlayer != null)
-                CustomButton(
-                  label: localPlayer.isReady ? 'MARK NOT READY' : 'I AM READY!',
-                  icon: localPlayer.isReady ? Icons.close : Icons.check,
-                  variant: localPlayer.isReady ? ButtonVariant.outlined : ButtonVariant.secondary,
-                  onPressed: () {
-                    ref
-                        .read(lobbyViewModelProvider(widget.roomCode).notifier)
-                        .toggleReady(localPlayer.id);
-                  },
+                AppSpacing.gapVLg,
+
+                // --- Player Count Header ---
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          PhosphorIcons.users(PhosphorIconsStyle.fill),
+                          size: 18,
+                          color: AppColors.primaryLight,
+                        ),
+                        AppSpacing.gapHSm,
+                        Text(
+                          'COURT PLAYERS (${lobbyState.players.length}/${AppConstants.maxPlayers})',
+                          style: AppTextStyles.heading3().copyWith(
+                            letterSpacing: 0.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: (lobbyState.canStartGame ? AppColors.success : AppColors.warning)
+                            .withValues(alpha: 0.15),
+                        borderRadius: AppRadius.chipRadius,
+                        border: Border.all(
+                          color: lobbyState.canStartGame ? AppColors.success : AppColors.warning,
+                        ),
+                      ),
+                      child: Text(
+                        lobbyState.canStartGame ? 'READY TO PLAY' : 'WAITING FOR 4',
+                        style: AppTextStyles.caption(
+                          color: lobbyState.canStartGame ? AppColors.success : AppColors.warning,
+                        ).copyWith(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ],
                 ),
-              AppSpacing.gapVMd,
-            ],
+                AppSpacing.gapVSm,
+
+                // --- 4 Player Slots ---
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: AppConstants.maxPlayers,
+                    separatorBuilder: (context, index) => AppSpacing.gapVSm,
+                    itemBuilder: (context, index) {
+                      if (index < lobbyState.players.length) {
+                        final player = lobbyState.players[index];
+                        return PlayerTile(
+                          player: player,
+                          showReadyStatus: true,
+                        );
+                      }
+                      // Empty slot placeholder with glassmorphism feel
+                      return Container(
+                        padding: AppSpacing.cardPadding,
+                        decoration: BoxDecoration(
+                          color: AppColors.glassFill.withValues(alpha: 0.4),
+                          border: Border.all(
+                            color: AppColors.glassBorder.withValues(alpha: 0.4),
+                            style: BorderStyle.solid,
+                          ),
+                          borderRadius: AppRadius.cardRadius,
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 22,
+                              backgroundColor: AppColors.surfaceElevatedDark,
+                              child: Icon(
+                                PhosphorIcons.userPlus(PhosphorIconsStyle.bold),
+                                color: AppColors.textLightMuted,
+                                size: 18,
+                              ),
+                            ),
+                            AppSpacing.gapHMd,
+                            Text(
+                              'Waiting for Courtier ${index + 1}...',
+                              style: AppTextStyles.bodyMedium(color: AppColors.textLightMuted),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                // --- Action Controls ---
+                if (isHost)
+                  CustomButton(
+                    label: lobbyState.canStartGame
+                        ? 'Start Game'
+                        : 'Waiting for Players (${lobbyState.players.length}/4)',
+                    leading: Icon(
+                      PhosphorIcons.play(PhosphorIconsStyle.fill),
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    isLoading: lobbyState.isStarting,
+                    onPressed: lobbyState.canStartGame
+                        ? () async {
+                            final started = await ref
+                                .read(lobbyViewModelProvider(widget.roomCode).notifier)
+                                .startGame();
+                            if (started && context.mounted) {
+                              context.go(AppRoutes.gameRoundPath(widget.roomCode));
+                            }
+                          }
+                        : null,
+                  )
+                else if (localPlayer != null)
+                  CustomButton(
+                    label: localPlayer.isReady ? 'Mark Not Ready' : 'I am Ready!',
+                    leading: Icon(
+                      localPlayer.isReady
+                          ? PhosphorIcons.x(PhosphorIconsStyle.bold)
+                          : PhosphorIcons.check(PhosphorIconsStyle.bold),
+                      color: localPlayer.isReady ? Colors.white : AppColors.backgroundDark,
+                      size: 18,
+                    ),
+                    variant: localPlayer.isReady
+                        ? ButtonVariant.outlined
+                        : ButtonVariant.secondary,
+                    onPressed: () {
+                      ref
+                          .read(lobbyViewModelProvider(widget.roomCode).notifier)
+                          .toggleReady(localPlayer.id);
+                    },
+                  ),
+                AppSpacing.gapVMd,
+              ],
+            ),
           ),
         ),
       ),

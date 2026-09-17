@@ -5,8 +5,10 @@ import '../../core/constants/app_radius.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/utils/extensions.dart';
+import 'role_art.dart';
 
-/// Visually distinct, color-coded badge representing a [GameRole].
+/// Visually distinct, color-coded badge representing a [GameRole]
+/// featuring custom vector illustrations and ambient luminous glows.
 class RoleBadge extends StatelessWidget {
   /// The game role to render.
   final GameRole role;
@@ -24,23 +26,9 @@ class RoleBadge extends StatelessWidget {
     this.showPoints = true,
   });
 
-  IconData _roleIcon(GameRole role) {
-    switch (role) {
-      case GameRole.raja:
-        return Icons.workspace_premium; // Crown
-      case GameRole.mantri:
-        return Icons.auto_stories; // Decree scroll
-      case GameRole.police:
-        return Icons.local_police; // Badge
-      case GameRole.chor:
-        return Icons.masks; // Thief mask
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final roleColor = role.color;
-    final containerColor = role.containerColor;
 
     if (isCompact) {
       return Container(
@@ -49,18 +37,26 @@ class RoleBadge extends StatelessWidget {
           vertical: AppSpacing.xs,
         ),
         decoration: BoxDecoration(
-          color: containerColor,
+          color: roleColor.withValues(alpha: 0.15),
           borderRadius: AppRadius.chipRadius,
-          border: Border.all(color: roleColor.withValues(alpha: 0.5), width: 1),
+          border: Border.all(color: roleColor.withValues(alpha: 0.6), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: roleColor.withValues(alpha: 0.2),
+              blurRadius: 6,
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(_roleIcon(role), size: 14, color: roleColor),
+            RoleVectorIcon(role: role, size: 16, hasGlow: false),
             AppSpacing.gapHXs,
             Text(
               role.shortName,
-              style: AppTextStyles.caption(color: roleColor),
+              style: AppTextStyles.caption(color: roleColor).copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),
@@ -73,30 +69,48 @@ class RoleBadge extends StatelessWidget {
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: containerColor,
+        color: roleColor.withValues(alpha: 0.14),
         borderRadius: AppRadius.buttonRadius,
-        border: Border.all(color: roleColor, width: 1.5),
+        border: Border.all(color: roleColor.withValues(alpha: 0.8), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: roleColor.withValues(alpha: 0.30),
+            blurRadius: 16,
+            spreadRadius: 1,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(_roleIcon(role), size: 20, color: roleColor),
-          AppSpacing.gapHSm,
+          RoleVectorIcon(role: role, size: 26, hasGlow: true),
+          AppSpacing.gapHMd,
           Text(
             role.displayName,
-            style: AppTextStyles.bodyLarge(color: roleColor),
+            style: AppTextStyles.bodyLarge(color: roleColor).copyWith(
+              fontWeight: FontWeight.w800,
+            ),
           ),
           if (showPoints) ...[
             AppSpacing.gapHSm,
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: roleColor,
                 borderRadius: AppRadius.chipRadius,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 4,
+                  ),
+                ],
               ),
               child: Text(
                 '+${role.points}',
-                style: AppTextStyles.caption(color: Colors.black),
+                style: AppTextStyles.caption(color: Colors.black).copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ],

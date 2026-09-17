@@ -75,32 +75,32 @@ abstract final class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceDark,
-        hintStyle: AppTextStyles.bodyMedium(color: AppColors.textLightMuted),
-        labelStyle: AppTextStyles.bodyMedium(color: AppColors.textLightSecondary),
+        fillColor: const Color(0x33000000),
+        hintStyle: AppTextStyles.bodyMedium(color: AppColors.textLightMuted).copyWith(fontSize: 14),
+        labelStyle: AppTextStyles.bodyMedium(color: AppColors.textLightSecondary).copyWith(fontSize: 14),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
-          vertical: AppSpacing.md,
+          vertical: 14,
         ),
-        border: const OutlineInputBorder(
+        border: OutlineInputBorder(
           borderRadius: AppRadius.buttonRadius,
-          borderSide: BorderSide(color: AppColors.borderDark),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 1.0),
         ),
-        enabledBorder: const OutlineInputBorder(
+        enabledBorder: OutlineInputBorder(
           borderRadius: AppRadius.buttonRadius,
-          borderSide: BorderSide(color: AppColors.borderDark),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 1.0),
         ),
         focusedBorder: const OutlineInputBorder(
           borderRadius: AppRadius.buttonRadius,
-          borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: BorderSide(color: AppColors.primaryLight, width: 1.2),
         ),
         errorBorder: const OutlineInputBorder(
           borderRadius: AppRadius.buttonRadius,
-          borderSide: BorderSide(color: AppColors.error),
+          borderSide: BorderSide(color: AppColors.error, width: 1.0),
         ),
         focusedErrorBorder: const OutlineInputBorder(
           borderRadius: AppRadius.buttonRadius,
-          borderSide: BorderSide(color: AppColors.error, width: 1.5),
+          borderSide: BorderSide(color: AppColors.error, width: 1.2),
         ),
       ),
       dividerTheme: const DividerThemeData(

@@ -12,6 +12,27 @@ abstract final class AppTextStyles {
   static String get fontFamily => GoogleFonts.outfit().fontFamily ?? 'Outfit';
 
   // --- Headings ---
+  /// Grand dramatic hero game title with crisp depth and subtle gold warmth.
+  static TextStyle heroTitle({Color? color}) => GoogleFonts.outfit(
+        fontSize: 36,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.5,
+        height: 1.15,
+        color: color ?? AppColors.raja,
+        shadows: const [
+          Shadow(
+            color: Color(0x35FFB703),
+            blurRadius: 16,
+            offset: Offset(0, 2),
+          ),
+          Shadow(
+            color: Color(0x60000000),
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      );
+
   /// Display heading 1 (Hero screens, role reveals).
   static TextStyle heading1({Color? color}) => GoogleFonts.outfit(
         fontSize: 32,

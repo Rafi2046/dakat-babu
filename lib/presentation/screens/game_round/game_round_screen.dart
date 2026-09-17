@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_radius.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -11,9 +13,11 @@ import '../../../core/routes/app_routes.dart';
 import '../../../core/utils/extensions.dart';
 import '../../../data/models/round_model.dart';
 import '../../viewmodels/game_round_viewmodel.dart';
+import '../../widgets/animated_living_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/game_card.dart';
 import '../../widgets/player_tile.dart';
+import '../../widgets/role_art.dart';
 
 /// The active game round screen featuring secret role unmasking and Police interrogation.
 class GameRoundScreen extends ConsumerStatefulWidget {
@@ -28,7 +32,8 @@ class GameRoundScreen extends ConsumerStatefulWidget {
 class _GameRoundScreenState extends ConsumerState<GameRoundScreen> {
   @override
   Widget build(BuildContext context) {
-    final currentUserId = ref.watch(currentPlayerIdProvider);
+    final currentUserId = ref.watch(currentPlayerIdProvider) ??
+        ref.watch(supabaseServiceProvider).currentUserId;
     final roundState = ref.watch(gameRoundViewModelProvider(widget.roomCode));
 
     // When round completes, automatically route all players to results screen
@@ -47,6 +52,7 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen> {
     final isPolice = roundState.isPolice(currentUserId);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
           'Round ${roundState.round?.roundNumber ?? 1}',
@@ -62,20 +68,27 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen> {
             ),
             decoration: BoxDecoration(
               color: roundState.remainingSeconds <= 10
-                  ? AppColors.error.withValues(alpha: 0.2)
-                  : AppColors.surfaceElevatedDark,
+                  ? AppColors.error.withValues(alpha: 0.25)
+                  : AppColors.glassFill,
               borderRadius: AppRadius.pillRadius,
               border: Border.all(
                 color: roundState.remainingSeconds <= 10
                     ? AppColors.error
-                    : AppColors.borderDark,
+                    : AppColors.glassBorder,
               ),
+              boxShadow: [
+                if (roundState.remainingSeconds <= 10)
+                  BoxShadow(
+                    color: AppColors.error.withValues(alpha: 0.4),
+                    blurRadius: 10,
+                  ),
+              ],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  Icons.timer,
+                  PhosphorIcons.timer(PhosphorIconsStyle.bold),
                   size: 16,
                   color: roundState.remainingSeconds <= 10
                       ? AppColors.error
@@ -95,148 +108,205 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: AppSpacing.screenPadding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // --- Secret Role Card (Tap to Peek) ---
-              GestureDetector(
-                onTap: () => ref
-                    .read(gameRoundViewModelProvider(widget.roomCode).notifier)
-                    .toggleCardReveal(),
-                child: GameCard(
-                  gradient: roundState.isCardRevealed && myRole != null
-                      ? myRole.gradient
-                      : null,
-                  backgroundColor: AppColors.surfaceElevatedDark,
-                  borderColor: roundState.isCardRevealed && myRole != null
-                      ? myRole.color
-                      : AppColors.primaryLight,
-                  padding: const EdgeInsets.all(AppSpacing.lg),
+      body: AnimatedLivingBackground(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: AppSpacing.screenPadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppSpacing.gapVSm,
+
+                // --- Secret Role Card (Tap to Peek) ---
+                GestureDetector(
+                  onTap: () => ref
+                      .read(gameRoundViewModelProvider(widget.roomCode).notifier)
+                      .toggleCardReveal(),
+                  child: GameCard(
+                    isGlass: true,
+                    glowColor: roundState.isCardRevealed && myRole != null
+                        ? myRole.color.withValues(alpha: 0.35)
+                        : AppColors.primaryGlow,
+                    borderColor: roundState.isCardRevealed && myRole != null
+                        ? myRole.color
+                        : AppColors.primaryLight,
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Stack(
+                      children: [
+                        // Watermark pattern when revealed
+                        if (roundState.isCardRevealed && myRole != null)
+                          Positioned.fill(
+                            child: CustomPaint(
+                              painter: RolePatternPainter(role: myRole),
+                            ),
+                          ),
+
+                        Column(
+                          children: [
+                            if (roundState.isCardRevealed && myRole != null)
+                              RoleVectorIcon(
+                                role: myRole,
+                                size: 56,
+                                hasGlow: true,
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.primary.withValues(alpha: 0.15),
+                                ),
+                                child: Icon(
+                                  PhosphorIcons.eyeSlash(PhosphorIconsStyle.bold),
+                                  size: 36,
+                                  color: AppColors.primaryLight,
+                                ),
+                              ),
+                            AppSpacing.gapVSm,
+                            Text(
+                              roundState.isCardRevealed && myRole != null
+                                  ? myRole.displayName.toUpperCase()
+                                  : 'TAP TO VIEW SECRET ROLE',
+                              style: AppTextStyles.roleTitle(
+                                color: roundState.isCardRevealed && myRole != null
+                                    ? myRole.color
+                                    : AppColors.textLightPrimary,
+                              ).copyWith(fontSize: 24),
+                            ),
+                            AppSpacing.gapVXs,
+                            Text(
+                              roundState.isCardRevealed && myRole != null
+                                  ? myRole.instructions
+                                  : 'Tap to peek. Keep your screen hidden from rivals!',
+                              style: AppTextStyles.bodyMedium(
+                                color: roundState.isCardRevealed
+                                    ? Colors.white.withValues(alpha: 0.9)
+                                    : AppColors.textLightSecondary,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                AppSpacing.gapVLg,
+
+                // --- Court Proclamation (Who is Raja / Police) ---
+                GameCard(
+                  isGlass: true,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        roundState.isCardRevealed
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                        size: 32,
-                        color: roundState.isCardRevealed
-                            ? Colors.white
-                            : AppColors.primaryLight,
+                      Row(
+                        children: [
+                          Icon(
+                            PhosphorIcons.megaphone(PhosphorIconsStyle.fill),
+                            size: 16,
+                            color: AppColors.raja,
+                          ),
+                          AppSpacing.gapHXs,
+                          Text(
+                            'ROYAL PROCLAMATION',
+                            style: AppTextStyles.caption(color: AppColors.textLightSecondary)
+                                .copyWith(fontWeight: FontWeight.w800, letterSpacing: 0.8),
+                          ),
+                        ],
                       ),
                       AppSpacing.gapVSm,
-                      Text(
-                        roundState.isCardRevealed && myRole != null
-                            ? myRole.displayName.toUpperCase()
-                            : 'YOUR SECRET ROLE',
-                        style: AppTextStyles.roleTitle(
-                          color: roundState.isCardRevealed
-                              ? Colors.white
-                              : AppColors.textLightPrimary,
+                      if (roundState.rajaPlayer != null)
+                        Row(
+                          children: [
+                            const RoleVectorIcon(role: GameRole.raja, size: 22, hasGlow: false),
+                            AppSpacing.gapHSm,
+                            Text(
+                              '👑 Raja: ${roundState.rajaPlayer!.name} (Declared)',
+                              style: AppTextStyles.bodyLarge(color: AppColors.raja)
+                                  .copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ],
                         ),
-                      ),
                       AppSpacing.gapVXs,
-                      Text(
-                        roundState.isCardRevealed && myRole != null
-                            ? myRole.instructions
-                            : 'Tap to unmask and keep secret!',
-                        style: AppTextStyles.bodyMedium(
-                          color: roundState.isCardRevealed
-                              ? Colors.white.withValues(alpha: 0.9)
-                              : AppColors.textLightSecondary,
+                      if (roundState.policePlayer != null)
+                        Row(
+                          children: [
+                            const RoleVectorIcon(role: GameRole.police, size: 22, hasGlow: false),
+                            AppSpacing.gapHSm,
+                            Text(
+                              '👮 Police: ${roundState.policePlayer!.name} (Investigating)',
+                              style: AppTextStyles.bodyLarge(color: AppColors.police)
+                                  .copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ],
                         ),
-                        textAlign: TextAlign.center,
-                      ),
                     ],
                   ),
                 ),
-              ),
 
-              AppSpacing.gapVXl,
+                AppSpacing.gapVLg,
 
-              // --- Court Proclamation (Who is Raja / Police) ---
-              GameCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'COURT ANNOUNCEMENTS',
-                      style: AppTextStyles.caption(color: AppColors.textLightSecondary),
-                    ),
-                    AppSpacing.gapVSm,
-                    if (roundState.rajaPlayer != null)
-                      Text(
-                        '👑 Raja: ${roundState.rajaPlayer!.name} (Declared)',
-                        style: AppTextStyles.bodyLarge(color: AppColors.raja),
-                      ),
-                    AppSpacing.gapVXs,
-                    if (roundState.policePlayer != null)
-                      Text(
-                        '👮 Police: ${roundState.policePlayer!.name} (Investigating)',
-                        style: AppTextStyles.bodyLarge(color: AppColors.police),
-                      ),
-                  ],
+                // --- Suspect Accusation Section ---
+                Text(
+                  isPolice ? 'SELECT THE CHOR (THIEF):' : 'SUSPECTS UNDER QUESTIONING:',
+                  style: AppTextStyles.heading3().copyWith(fontWeight: FontWeight.w800),
                 ),
-              ),
+                AppSpacing.gapVSm,
 
-              AppSpacing.gapVLg,
+                ...roundState.suspects.map((suspect) {
+                  final isSelected = roundState.selectedSuspectId == suspect.id;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: PlayerTile(
+                      player: suspect,
+                      isSelected: isSelected,
+                      onTap: isPolice
+                          ? () {
+                              ref
+                                  .read(gameRoundViewModelProvider(widget.roomCode).notifier)
+                                  .selectSuspect(suspect.id);
+                            }
+                          : null,
+                    ),
+                  );
+                }),
 
-              // --- Suspect Accusation Section ---
-              Text(
-                isPolice ? 'SELECT THE CHOR (THIEF):' : 'SUSPECTS UNDER QUESTIONING:',
-                style: AppTextStyles.heading3(),
-              ),
-              AppSpacing.gapVSm,
+                AppSpacing.gapVLg,
 
-              ...roundState.suspects.map((suspect) {
-                final isSelected = roundState.selectedSuspectId == suspect.id;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: PlayerTile(
-                    player: suspect,
-                    isSelected: isSelected,
-                    onTap: isPolice
-                        ? () {
-                            ref
+                // --- Accusation Submission Button ---
+                if (isPolice)
+                  CustomButton(
+                    label: 'ACCUSE AS CHOR!',
+                    variant: ButtonVariant.danger,
+                    leading: Icon(
+                      PhosphorIcons.gavel(PhosphorIconsStyle.fill),
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    isLoading: roundState.isSubmittingGuess,
+                    onPressed: roundState.selectedSuspectId != null
+                        ? () async {
+                            await ref
                                 .read(gameRoundViewModelProvider(widget.roomCode).notifier)
-                                .selectSuspect(suspect.id);
+                                .submitGuess();
                           }
                         : null,
-                  ),
-                );
-              }),
-
-              AppSpacing.gapVLg,
-
-              // --- Accusation Submission Button ---
-              if (isPolice)
-                CustomButton(
-                  label: 'ACCUSE AS CHOR!',
-                  variant: ButtonVariant.danger,
-                  icon: Icons.gavel,
-                  isLoading: roundState.isSubmittingGuess,
-                  onPressed: roundState.selectedSuspectId != null
-                      ? () async {
-                          await ref
-                              .read(gameRoundViewModelProvider(widget.roomCode).notifier)
-                              .submitGuess();
-                        }
-                      : null,
-                )
-              else
-                GameCard(
-                  backgroundColor: AppColors.surfaceDark.withValues(alpha: 0.5),
-                  child: Center(
-                    child: Text(
-                      'Police is questioning the suspects... Hold your nerve!',
-                      style: AppTextStyles.bodyMedium(color: AppColors.textLightSecondary),
-                      textAlign: TextAlign.center,
+                  )
+                else
+                  GameCard(
+                    isGlass: true,
+                    backgroundColor: AppColors.glassFill.withValues(alpha: 0.3),
+                    child: Center(
+                      child: Text(
+                        'Police is questioning the suspects... Keep a poker face!',
+                        style: AppTextStyles.bodyMedium(color: AppColors.textLightSecondary),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

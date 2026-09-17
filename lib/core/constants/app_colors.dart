@@ -104,64 +104,103 @@ abstract final class AppColors {
   /// Disabled or muted text for light themes.
   static const Color textDarkMuted = Color(0xFF94A3B8);
 
-  // --- Game Gradients ---
-  /// Dark atmospheric ambient background gradient.
-  static const LinearGradient darkBackgroundGradient = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [
-      Color(0xFF121622),
-      Color(0xFF0B0E14),
-    ],
-  );
+  // --- Distinct Role Glows for party cards and badges ---
+  /// Raja ambient gold glow.
+  static const Color rajaGlow = Color(0x66FFB703);
 
-  /// Primary button/header gradient.
-  static const LinearGradient primaryGradient = LinearGradient(
+  /// Mantri ambient violet glow.
+  static const Color mantriGlow = Color(0x668338EC);
+
+  /// Police ambient cyan/blue glow.
+  static const Color policeGlow = Color(0x6600B4D8);
+
+  /// Chor ambient crimson glow.
+  static const Color chorGlow = Color(0x66E63946);
+
+  /// Brand primary ambient glow.
+  static const Color primaryGlow = Color(0x556C5CE7);
+
+  /// Secondary electric cyan glow.
+  static const Color secondaryGlow = Color(0x5500CEC9);
+
+  // --- Glassmorphism Surface Tokens ---
+  /// Translucent frosted glass card fill - sleek, luminous and modern.
+  static const Color glassFill = Color(0x38121624);
+
+  /// Ultra-subtle inner glass highlight.
+  static const Color glassHighlight = Color(0x14FFFFFF);
+
+  /// Subtle iridescent hairline border for frosted glass.
+  static const Color glassBorder = Color(0x1FFFFFFF);
+
+  /// Active focused border for frosted glass cards.
+  static const Color glassBorderFocused = Color(0x556C5CE7);
+
+  // --- Game Gradients ---
+  /// Multi-stop deep ambient background gradient with cosmic undertones.
+  static const LinearGradient darkBackgroundGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF6C5CE7),
-      Color(0xFF4834D4),
+      Color(0xFF141028), // Subtle royal midnight indigo
+      Color(0xFF0C0E16), // Deep rich obsidian slate
+      Color(0xFF08090E), // Base pure dark
     ],
+    stops: [0.0, 0.55, 1.0],
   );
 
-  /// Raja role reveal card gradient.
+  /// Radiant gold gradient for Raja cards and headers.
   static const LinearGradient rajaGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
+      Color(0xFFFFD166),
       Color(0xFFFFB703),
       Color(0xFFFB8500),
     ],
   );
 
-  /// Mantri role reveal card gradient.
+  /// Imperial violet gradient for Mantri.
   static const LinearGradient mantriGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
+      Color(0xFFC77DFF),
       Color(0xFF9D4EDD),
       Color(0xFF7209B7),
     ],
   );
 
-  /// Police role reveal card gradient.
+  /// Tactical azure gradient for Police.
   static const LinearGradient policeGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF00B4D8),
-      Color(0xFF0077B6),
+      Color(0xFF48CAE4),
+      Color(0xFF0096C7),
+      Color(0xFF023E8A),
     ],
   );
 
-  /// Chor role reveal card gradient.
+  /// Rogue crimson gradient for Chor.
   static const LinearGradient chorGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFFFF4D6D),
-      Color(0xFFC9184A),
+      Color(0xFFFF5D73),
+      Color(0xFFE63946),
+      Color(0xFF9E0012),
+    ],
+  );
+
+  /// Primary button/header gradient with depth.
+  static const LinearGradient primaryGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF7C6CF5),
+      Color(0xFF6C5CE7),
+      Color(0xFF4834D4),
     ],
   );
 }

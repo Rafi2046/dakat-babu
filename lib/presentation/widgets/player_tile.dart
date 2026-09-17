@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_radius.dart';
@@ -9,7 +10,8 @@ import '../../data/models/player_model.dart';
 import 'game_card.dart';
 import 'role_badge.dart';
 
-/// Reusable player tile used in Lobby, Game Deduction, and Result screens.
+/// Reusable player tile used in Lobby, Game Deduction, and Result screens
+/// featuring frosted glassmorphism, glowing borders, and Phosphor icons.
 class PlayerTile extends StatelessWidget {
   /// The player represented by this tile.
   final PlayerModel player;
@@ -39,31 +41,53 @@ class PlayerTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final borderColor = isSelected
         ? AppColors.primaryLight
-        : (player.isHost ? AppColors.raja.withValues(alpha: 0.3) : AppColors.borderDark);
+        : (player.isHost ? AppColors.raja.withValues(alpha: 0.45) : AppColors.glassBorder);
 
     return GameCard(
+      isGlass: true,
       onTap: onTap,
       borderColor: borderColor,
+      glowColor: isSelected
+          ? AppColors.primaryGlow
+          : (player.isHost ? AppColors.rajaGlow.withValues(alpha: 0.15) : null),
       backgroundColor: isSelected
-          ? AppColors.primary.withValues(alpha: 0.15)
-          : AppColors.surfaceDark,
+          ? AppColors.primary.withValues(alpha: 0.22)
+          : AppColors.glassFill,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
+        vertical: AppSpacing.sm + 2,
       ),
       child: Row(
         children: [
           // Player Avatar with Initials
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: player.isHost
-                ? AppColors.rajaContainer
-                : AppColors.primary.withValues(alpha: 0.2),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: player.isHost
+                  ? AppColors.rajaGradient
+                  : LinearGradient(
+                      colors: [
+                        AppColors.primaryLight,
+                        AppColors.primaryDark,
+                      ],
+                    ),
+              boxShadow: [
+                BoxShadow(
+                  color: (player.isHost ? AppColors.raja : AppColors.primary)
+                      .withValues(alpha: 0.35),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            alignment: Alignment.center,
             child: Text(
               player.name.initials,
               style: AppTextStyles.bodyLarge(
-                color: player.isHost ? AppColors.raja : AppColors.textLightPrimary,
-              ),
+                color: player.isHost ? Colors.black : Colors.white,
+              ).copyWith(fontWeight: FontWeight.w900),
             ),
           ),
           AppSpacing.gapHMd,
@@ -79,19 +103,28 @@ class PlayerTile extends StatelessWidget {
                     Flexible(
                       child: Text(
                         player.name,
-                        style: AppTextStyles.bodyLarge(),
+                        style: AppTextStyles.bodyLarge().copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (player.isHost) ...[
                       AppSpacing.gapHXs,
-                      const Icon(Icons.star, size: 16, color: AppColors.raja),
+                      Icon(
+                        PhosphorIcons.crown(PhosphorIconsStyle.fill),
+                        size: 16,
+                        color: AppColors.raja,
+                      ),
                     ],
                   ],
                 ),
+                AppSpacing.gapVXs,
                 Text(
-                  'Score: ${player.score} pts',
-                  style: AppTextStyles.caption(color: AppColors.textLightSecondary),
+                  '${player.score} pts',
+                  style: AppTextStyles.caption(color: AppColors.textLightSecondary).copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -103,7 +136,11 @@ class PlayerTile extends StatelessWidget {
           else if (showReadyStatus)
             _ReadyStatusChip(isReady: player.isReady, isHost: player.isHost)
           else if (isSelected)
-            const Icon(Icons.check_circle, color: AppColors.primaryLight, size: 24),
+            Icon(
+              PhosphorIcons.checkCircle(PhosphorIconsStyle.fill),
+              color: AppColors.primaryLight,
+              size: 26,
+            ),
         ],
       ),
     );
@@ -121,16 +158,31 @@ class _ReadyStatusChip extends StatelessWidget {
     if (isHost) {
       return Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
+          horizontal: AppSpacing.sm + 2,
           vertical: AppSpacing.xs,
         ),
-        decoration: const BoxDecoration(
-          color: AppColors.rajaContainer,
+        decoration: BoxDecoration(
+          color: AppColors.raja.withValues(alpha: 0.18),
           borderRadius: AppRadius.chipRadius,
+          border: Border.all(color: AppColors.raja.withValues(alpha: 0.6)),
         ),
-        child: Text(
-          'HOST',
-          style: AppTextStyles.caption(color: AppColors.raja),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              PhosphorIcons.crown(PhosphorIconsStyle.fill),
+              size: 12,
+              color: AppColors.raja,
+            ),
+            AppSpacing.gapHXs,
+            Text(
+              'HOST',
+              style: AppTextStyles.caption(color: AppColors.raja).copyWith(
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -138,16 +190,33 @@ class _ReadyStatusChip extends StatelessWidget {
     final color = isReady ? AppColors.success : AppColors.textLightMuted;
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
+        horizontal: AppSpacing.sm + 2,
         vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        color: color.withValues(alpha: 0.16),
         borderRadius: AppRadius.chipRadius,
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
-      child: Text(
-        isReady ? 'READY' : 'WAITING',
-        style: AppTextStyles.caption(color: color),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isReady
+                ? PhosphorIcons.check(PhosphorIconsStyle.bold)
+                : PhosphorIcons.hourglass(PhosphorIconsStyle.bold),
+            size: 11,
+            color: color,
+          ),
+          AppSpacing.gapHXs,
+          Text(
+            isReady ? 'READY' : 'WAITING',
+            style: AppTextStyles.caption(color: color).copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }
