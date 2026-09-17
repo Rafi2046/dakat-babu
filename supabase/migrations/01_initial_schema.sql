@@ -58,54 +58,139 @@ alter table public.rooms enable row level security;
 alter table public.players enable row level security;
 alter table public.game_rounds enable row level security;
 
--- 7. RLS Policies: Allow Anonymous & Authenticated Players to read/write game data
+-- 7. Secure Scoped RLS Policies (auth.uid() scoped)
 -- Rooms policies
 create policy "Allow public read on rooms" 
   on public.rooms for select 
   using (true);
 
-create policy "Allow public insert on rooms" 
+create policy "Allow authenticated insert on rooms" 
   on public.rooms for insert 
-  with check (true);
+  with check (
+    auth.uid() is not null
+    and (
+      (auth.uid())::text = split_part(host_id, '_', 1)
+      or host_id = (auth.uid())::text
+    )
+  );
 
-create policy "Allow public update on rooms" 
+create policy "Allow host and room players update on rooms" 
   on public.rooms for update 
-  using (true);
+  using (
+    (auth.uid())::text = split_part(host_id, '_', 1)
+    or host_id = (auth.uid())::text
+    or exists (
+      select 1 from public.players p
+      where p.room_code = rooms.room_code
+        and (
+          (auth.uid())::text = split_part(p.id, '_', 1)
+          or p.id = (auth.uid())::text
+        )
+    )
+  );
 
-create policy "Allow public delete on rooms" 
+create policy "Allow host delete on rooms" 
   on public.rooms for delete 
-  using (true);
+  using (
+    (auth.uid())::text = split_part(host_id, '_', 1)
+    or host_id = (auth.uid())::text
+  );
 
 -- Players policies
 create policy "Allow public read on players" 
   on public.players for select 
   using (true);
 
-create policy "Allow public insert on players" 
+create policy "Allow player insert own record" 
   on public.players for insert 
-  with check (true);
+  with check (
+    auth.uid() is not null
+    and (
+      (auth.uid())::text = split_part(id, '_', 1)
+      or id = (auth.uid())::text
+    )
+  );
 
-create policy "Allow public update on players" 
+create policy "Allow player host or police update on players" 
   on public.players for update 
-  using (true);
+  using (
+    (auth.uid())::text = split_part(id, '_', 1)
+    or id = (auth.uid())::text
+    or exists (
+      select 1 from public.rooms r
+      where r.room_code = players.room_code
+        and (
+          (auth.uid())::text = split_part(r.host_id, '_', 1)
+          or r.host_id = (auth.uid())::text
+        )
+    )
+    or exists (
+      select 1 from public.game_rounds gr
+      where gr.room_code = players.room_code
+        and (
+          (auth.uid())::text = split_part(gr.police_player_id, '_', 1)
+          or gr.police_player_id = (auth.uid())::text
+        )
+    )
+  );
 
-create policy "Allow public delete on players" 
+create policy "Allow player or host delete on players" 
   on public.players for delete 
-  using (true);
+  using (
+    (auth.uid())::text = split_part(id, '_', 1)
+    or id = (auth.uid())::text
+    or exists (
+      select 1 from public.rooms r
+      where r.room_code = players.room_code
+        and (
+          (auth.uid())::text = split_part(r.host_id, '_', 1)
+          or r.host_id = (auth.uid())::text
+        )
+    )
+  );
 
 -- Game Rounds policies
 create policy "Allow public read on game_rounds" 
   on public.game_rounds for select 
   using (true);
 
-create policy "Allow public insert on game_rounds" 
+create policy "Allow host insert on game_rounds" 
   on public.game_rounds for insert 
-  with check (true);
+  with check (
+    exists (
+      select 1 from public.rooms r
+      where r.room_code = game_rounds.room_code
+        and (
+          (auth.uid())::text = split_part(r.host_id, '_', 1)
+          or r.host_id = (auth.uid())::text
+        )
+    )
+  );
 
-create policy "Allow public update on game_rounds" 
+create policy "Allow police or host update on game_rounds" 
   on public.game_rounds for update 
-  using (true);
+  using (
+    (auth.uid())::text = split_part(police_player_id, '_', 1)
+    or police_player_id = (auth.uid())::text
+    or exists (
+      select 1 from public.rooms r
+      where r.room_code = game_rounds.room_code
+        and (
+          (auth.uid())::text = split_part(r.host_id, '_', 1)
+          or r.host_id = (auth.uid())::text
+        )
+    )
+  );
 
-create policy "Allow public delete on game_rounds" 
+create policy "Allow host delete on game_rounds" 
   on public.game_rounds for delete 
-  using (true);
+  using (
+    exists (
+      select 1 from public.rooms r
+      where r.room_code = game_rounds.room_code
+        and (
+          (auth.uid())::text = split_part(r.host_id, '_', 1)
+          or r.host_id = (auth.uid())::text
+        )
+    )
+  );
