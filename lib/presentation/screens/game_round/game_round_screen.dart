@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,9 +13,11 @@ import '../../../core/di/providers.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/utils/extensions.dart';
 import '../../../data/models/player_model.dart';
+import '../../../data/models/room_model.dart';
 import '../../../data/models/round_model.dart';
 import '../../viewmodels/game_round_viewmodel.dart';
 import '../../widgets/animated_living_background.dart';
+import '../../widgets/app_feedback.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/flip_role_card.dart';
 import '../../widgets/game_card.dart';
@@ -37,9 +40,18 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen> {
     final currentUserId = ref.watch(currentPlayerIdProvider) ??
         ref.watch(supabaseServiceProvider).currentUserId;
     final roundState = ref.watch(gameRoundViewModelProvider(widget.roomCode));
+    final isHost = roundState.isHost(currentUserId);
 
     // When round completes or police submits guess, route all players to results screen
     ref.listen<GameRoundState>(gameRoundViewModelProvider(widget.roomCode), (prev, current) {
+      if (current.isCancelled && !(prev?.isCancelled ?? false)) {
+        AppFeedback.showRoomCancelledDialog(context);
+        return;
+      }
+      if (current.room?.status == RoomStatus.waiting) {
+        context.go(AppRoutes.lobbyPath(widget.roomCode));
+        return;
+      }
       final isCompleted = current.round?.status == RoundStatus.completed ||
           current.round?.policeGuessPlayerId != null;
       if (isCompleted) {
@@ -47,7 +59,11 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen> {
       }
       if (current.errorMessage != null &&
           current.errorMessage != prev?.errorMessage) {
-        context.showErrorSnackBar(current.errorMessage!);
+        AppFeedback.showSnackBar(
+          context,
+          message: current.errorMessage!,
+          isError: true,
+        );
       }
     });
 
@@ -62,6 +78,11 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen> {
         title: Text(
           'Round ${roundState.round?.roundNumber ?? 1}',
           style: AppTextStyles.heading2(),
+        ),
+        leading: IconButton(
+          icon: Icon(PhosphorIcons.door(PhosphorIconsStyle.bold)),
+          tooltip: 'Leave Match',
+          onPressed: () => _handleLeave(context, isHost, currentUserId),
         ),
         actions: [
           // Countdown Timer Pill
@@ -113,45 +134,51 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen> {
           ),
         ],
       ),
-      body: AnimatedLivingBackground(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md + 2,
-              vertical: AppSpacing.sm,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 6),
-
-                // --- 1. Secret Role Reveal Flip Card ---
-                FlipRoleCard(
-                  role: myRole,
-                  isRevealed: roundState.isCardRevealed,
-                  onToggle: () => ref
-                      .read(gameRoundViewModelProvider(widget.roomCode).notifier)
-                      .toggleCardReveal(),
+      body: Stack(
+        children: [
+          AnimatedLivingBackground(
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md + 2,
+                  vertical: AppSpacing.sm,
                 ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 6),
 
-                const SizedBox(height: 14),
+                    // --- 1. Secret Role Reveal Flip Card ---
+                    FlipRoleCard(
+                      role: myRole,
+                      isRevealed: roundState.isCardRevealed,
+                      onToggle: () => ref
+                          .read(gameRoundViewModelProvider(widget.roomCode).notifier)
+                          .toggleCardReveal(),
+                    ),
 
-                // --- 2. Royal Proclamation Banner ---
-                _buildRoyalProclamation(roundState, isRaja: isRaja),
+                    const SizedBox(height: 14),
 
-                const SizedBox(height: 16),
+                    // --- 2. Royal Proclamation Banner ---
+                    _buildRoyalProclamation(roundState, isRaja: isRaja),
 
-                // --- 3. Role-Specific Phase Interface ---
-                if (isPolice)
-                  _buildPoliceInterrogationSection(roundState, currentUserId)
-                else
-                  _buildNonPoliceWaitingSection(roundState, myRole),
+                    const SizedBox(height: 16),
 
-                const SizedBox(height: 20),
-              ],
+                    // --- 3. Role-Specific Phase Interface ---
+                    if (isPolice)
+                      _buildPoliceInterrogationSection(roundState, currentUserId)
+                    else
+                      _buildNonPoliceWaitingSection(roundState, myRole),
+
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+          if (roundState.isPlayerLeft)
+            _buildPlayerLeftOverlay(context, roundState, isHost, currentUserId),
+        ],
       ),
     );
   }
@@ -567,5 +594,152 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen> {
         ],
       ),
     );
+  }
+
+  /// Full-screen frosted overlay when a player leaves or disconnects mid-match.
+  Widget _buildPlayerLeftOverlay(
+    BuildContext context,
+    GameRoundState state,
+    bool isHost,
+    String? currentUserId,
+  ) {
+    return Positioned.fill(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          color: const Color(0xB5000000),
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          alignment: Alignment.center,
+          child: GameCard(
+            isGlass: true,
+            borderColor: AppColors.error.withValues(alpha: 0.6),
+            glowColor: AppColors.error.withValues(alpha: 0.3),
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    PhosphorIcons.warning(PhosphorIconsStyle.fill),
+                    color: AppColors.error,
+                    size: 28,
+                  ),
+                ),
+                AppSpacing.gapVMd,
+                Text(
+                  'Courtier Disconnected',
+                  style: AppTextStyles.heading2(color: Colors.white).copyWith(fontSize: 22),
+                  textAlign: TextAlign.center,
+                ),
+                AppSpacing.gapVSm,
+                Text(
+                  'A courtier has left or lost network connection. DakatBabu requires all 4 players to continue the royal match.',
+                  style: AppTextStyles.bodyMedium(color: AppColors.textLightSecondary),
+                  textAlign: TextAlign.center,
+                ),
+                AppSpacing.gapVMd,
+                // Remaining players count chip
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceElevatedDark,
+                    borderRadius: AppRadius.chipRadius,
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(PhosphorIcons.users(PhosphorIconsStyle.bold), size: 16, color: AppColors.primaryLight),
+                      AppSpacing.gapHSm,
+                      Text(
+                        'Courtiers in Room: ${state.players.length}/${AppConstants.maxPlayers}',
+                        style: AppTextStyles.caption(color: Colors.white).copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ),
+                AppSpacing.gapVLg,
+                if (isHost) ...[
+                  CustomButton(
+                    label: 'Return to Lobby (Invite 4th)',
+                    leading: Icon(PhosphorIcons.userPlus(PhosphorIconsStyle.bold), size: 18),
+                    onPressed: () async {
+                      await ref
+                          .read(gameRoundViewModelProvider(widget.roomCode).notifier)
+                          .returnToLobby();
+                    },
+                  ),
+                  AppSpacing.gapVSm,
+                  CustomButton(
+                    label: 'Disband Room',
+                    variant: ButtonVariant.danger,
+                    leading: Icon(PhosphorIcons.xCircle(PhosphorIconsStyle.bold), size: 18),
+                    onPressed: () async {
+                      final confirm = await AppFeedback.showConfirmationDialog(
+                        context,
+                        title: 'Disband Room?',
+                        message: 'Are you sure you want to end this game and return all players to the main hall?',
+                        confirmLabel: 'Disband',
+                        isDestructive: true,
+                      );
+                      if (confirm && context.mounted) {
+                        await ref
+                            .read(gameRoundViewModelProvider(widget.roomCode).notifier)
+                            .cancelGame();
+                      }
+                    },
+                  ),
+                ] else ...[
+                  Text(
+                    'Waiting for the host to invite a replacement courtier...',
+                    style: AppTextStyles.caption(color: AppColors.secondary).copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  AppSpacing.gapVMd,
+                  CustomButton(
+                    label: 'Leave Match',
+                    variant: ButtonVariant.outlined,
+                    leading: Icon(PhosphorIcons.door(PhosphorIconsStyle.bold), size: 18),
+                    onPressed: () => _handleLeave(context, isHost, currentUserId),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleLeave(BuildContext context, bool isHost, String? currentUserId) async {
+    if (currentUserId == null) {
+      context.go(AppRoutes.home);
+      return;
+    }
+
+    final shouldLeave = await AppFeedback.showConfirmationDialog(
+      context,
+      title: 'Leave Match?',
+      message: isHost
+          ? 'As host, leaving will pause the round and transfer leadership or disband the room.'
+          : 'Leaving mid-match will pause the round for all other players. Are you sure you want to exit?',
+      confirmLabel: 'Leave Match',
+      isDestructive: true,
+    );
+
+    if (shouldLeave && context.mounted) {
+      await ref.read(gameRoundViewModelProvider(widget.roomCode).notifier).leaveGame(currentUserId);
+      if (context.mounted) context.go(AppRoutes.home);
+    }
   }
 }

@@ -15,12 +15,14 @@ class LobbyState {
   final List<PlayerModel> players;
   final bool isStarting;
   final String? errorMessage;
+  final bool isCancelled;
 
   const LobbyState({
     this.room,
     this.players = const [],
     this.isStarting = false,
     this.errorMessage,
+    this.isCancelled = false,
   });
 
   /// Whether current local user is the room host.
@@ -32,6 +34,13 @@ class LobbyState {
 
   /// Whether exactly 4 players have joined.
   bool get canStartGame => players.length == AppConstants.maxPlayers;
+
+  /// Whether the waiting lobby has exceeded idle timeout.
+  bool get isIdleTimedOut {
+    if (room == null || room!.status != RoomStatus.waiting) return false;
+    return DateTime.now().difference(room!.createdAt).inMinutes >=
+        AppConstants.lobbyTimeoutMinutes;
+  }
 
   /// Find the local player object.
   PlayerModel? currentPlayer(String? currentUserId) =>
@@ -46,12 +55,14 @@ class LobbyState {
     bool? isStarting,
     String? errorMessage,
     bool clearError = false,
+    bool? isCancelled,
   }) {
     return LobbyState(
       room: room ?? this.room,
       players: players ?? this.players,
       isStarting: isStarting ?? this.isStarting,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      isCancelled: isCancelled ?? this.isCancelled,
     );
   }
 }
@@ -80,7 +91,12 @@ class LobbyViewModel extends StateNotifier<LobbyState> {
     _roomSubscription?.cancel();
     _roomSubscription = _roomRepository.watchRoom(_roomCode).listen(
       (room) {
-        if (mounted) state = state.copyWith(room: room);
+        if (!mounted) return;
+        if (room == null || room.status == RoomStatus.cancelled) {
+          state = state.copyWith(room: room, isCancelled: true);
+        } else {
+          state = state.copyWith(room: room);
+        }
       },
       onError: (err) {
         if (mounted) state = state.copyWith(errorMessage: err.toString());
@@ -116,6 +132,55 @@ class LobbyViewModel extends StateNotifier<LobbyState> {
         final message = e is Failure ? e.message : e.toString();
         state = state.copyWith(errorMessage: message);
       }
+    }
+  }
+
+  /// Host manually cancels and disbands the waiting room.
+  Future<bool> cancelRoom() async {
+    try {
+      await _roomRepository.cancelRoom(_roomCode);
+      if (mounted) state = state.copyWith(isCancelled: true);
+      return true;
+    } catch (e) {
+      if (mounted) {
+        final message = e is Failure ? e.message : e.toString();
+        state = state.copyWith(errorMessage: message);
+      }
+      return false;
+    }
+  }
+
+  /// Removes or leaves the room for the specified [playerId].
+  Future<bool> leaveRoom(String playerId) async {
+    try {
+      await _roomRepository.leaveRoom(
+        playerId: playerId,
+        roomCode: _roomCode,
+      );
+      return true;
+    } catch (e) {
+      if (mounted) {
+        final message = e is Failure ? e.message : e.toString();
+        state = state.copyWith(errorMessage: message);
+      }
+      return false;
+    }
+  }
+
+  /// Host removes/kicks an unwanted or unresponsive player.
+  Future<bool> removePlayer(String playerId) async {
+    try {
+      await _roomRepository.removePlayer(
+        roomCode: _roomCode,
+        playerId: playerId,
+      );
+      return true;
+    } catch (e) {
+      if (mounted) {
+        final message = e is Failure ? e.message : e.toString();
+        state = state.copyWith(errorMessage: message);
+      }
+      return false;
     }
   }
 

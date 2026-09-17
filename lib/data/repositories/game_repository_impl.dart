@@ -22,15 +22,26 @@ class GameRepositoryImpl implements GameRepository {
     required List<PlayerModel> players,
     required int roundNumber,
   }) async {
-    if (players.length != AppConstants.maxPlayers) {
-      throw GameRuleFailure(
-        'Exactly ${AppConstants.maxPlayers} players are required to play (currently ${players.length})',
-      );
-    }
+    final cleanCode = roomCode.trim().toUpperCase();
 
     try {
+      // 0. Verify live player count from database to prevent race conditions
+      final livePlayerList = await _supabaseService.fetchList(
+        AppConstants.playersTable,
+        matchField: 'room_code',
+        matchValue: cleanCode,
+      );
+
+      if (livePlayerList.length != AppConstants.maxPlayers) {
+        throw GameRuleFailure(
+          'Cannot start: Exactly ${AppConstants.maxPlayers} players must be in the room (currently ${livePlayerList.length}).',
+        );
+      }
+
+      final activePlayers = livePlayerList.map(PlayerModel.fromJson).toList();
+
       // 1. Shuffle players and assign the 4 classic roles
-      final shuffledPlayers = List<PlayerModel>.from(players)..shuffle(Random.secure());
+      final shuffledPlayers = List<PlayerModel>.from(activePlayers)..shuffle(Random.secure());
       final rajaPlayer = shuffledPlayers[0];
       final mantriPlayer = shuffledPlayers[1];
       final policePlayer = shuffledPlayers[2];

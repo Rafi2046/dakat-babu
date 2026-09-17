@@ -28,6 +28,9 @@ class PlayerTile extends StatelessWidget {
   /// Whether to display lobby readiness state.
   final bool showReadyStatus;
 
+  /// Optional callback when host taps to remove this player.
+  final VoidCallback? onRemove;
+
   const PlayerTile({
     super.key,
     required this.player,
@@ -35,6 +38,7 @@ class PlayerTile extends StatelessWidget {
     this.onTap,
     this.revealRole = false,
     this.showReadyStatus = false,
+    this.onRemove,
   });
 
   @override
@@ -133,9 +137,28 @@ class PlayerTile extends StatelessWidget {
           // Role Badge or Lobby Readiness
           if (revealRole && player.role != null)
             RoleBadge(role: player.role!, isCompact: true)
-          else if (showReadyStatus)
-            _ReadyStatusChip(isReady: player.isReady, isHost: player.isHost)
-          else if (isSelected)
+          else if (showReadyStatus) ...[
+            _ReadyStatusChip(isReady: player.isReady, isHost: player.isHost),
+            if (onRemove != null && !player.isHost) ...[
+              AppSpacing.gapHSm,
+              InkWell(
+                onTap: onRemove,
+                borderRadius: AppRadius.pillRadius,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    PhosphorIcons.x(PhosphorIconsStyle.bold),
+                    size: 14,
+                    color: AppColors.error,
+                  ),
+                ),
+              ),
+            ],
+          ] else if (isSelected)
             Icon(
               PhosphorIcons.checkCircle(PhosphorIconsStyle.fill),
               color: AppColors.primaryLight,

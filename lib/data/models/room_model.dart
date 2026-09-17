@@ -10,7 +10,13 @@ enum RoomStatus {
   roundEnded,
 
   /// All match rounds are concluded.
-  completed;
+  completed,
+
+  /// A player dropped out or disconnected mid-game.
+  playerLeft,
+
+  /// The room was disbanded or cancelled by the host.
+  cancelled;
 
   /// Parses a status string into a [RoomStatus].
   static RoomStatus parse(String? value) {
@@ -24,6 +30,13 @@ enum RoomStatus {
         return RoomStatus.roundEnded;
       case 'completed':
         return RoomStatus.completed;
+      case 'player_left':
+      case 'playerleft':
+      case 'abandoned':
+        return RoomStatus.playerLeft;
+      case 'cancelled':
+      case 'canceled':
+        return RoomStatus.cancelled;
       case 'waiting':
       default:
         return RoomStatus.waiting;
@@ -41,6 +54,10 @@ enum RoomStatus {
         return 'round_ended';
       case RoomStatus.completed:
         return 'completed';
+      case RoomStatus.playerLeft:
+        return 'player_left';
+      case RoomStatus.cancelled:
+        return 'cancelled';
     }
   }
 }

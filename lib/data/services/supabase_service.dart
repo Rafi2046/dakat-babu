@@ -254,6 +254,24 @@ class SupabaseService {
     }
   }
 
+  /// Deletes rows from [table] matching the given [matchField] and [matchValue].
+  Future<void> delete(
+    String table, {
+    required String matchField,
+    required dynamic matchValue,
+  }) async {
+    if (!_isConfigured || _client == null) {
+      _mockDelete(table, matchField: matchField, matchValue: matchValue);
+      return;
+    }
+
+    try {
+      await _client!.from(table).delete().eq(matchField, matchValue);
+    } catch (e) {
+      throw ServerFailure('Delete failed on table $table: $e');
+    }
+  }
+
   // --- Private Mock Implementation Helpers ---
   Map<String, dynamic> _mockInsert(String table, Map<String, dynamic> values) {
     final record = Map<String, dynamic>.from(values);
@@ -344,5 +362,33 @@ class SupabaseService {
       return list;
     }
     return [];
+  }
+
+  void _mockDelete(
+    String table, {
+    required String matchField,
+    required dynamic matchValue,
+  }) {
+    if (table == AppConstants.roomsTable) {
+      for (final roomCode in List<String>.from(_mockRooms.keys)) {
+        if (_mockRooms[roomCode]?[matchField] == matchValue) {
+          _mockRooms.remove(roomCode);
+          _roomStreamControllers[roomCode]?.add(null);
+        }
+      }
+    } else if (table == AppConstants.playersTable) {
+      for (final roomCode in _mockPlayers.keys) {
+        final players = _mockPlayers[roomCode] ?? [];
+        players.removeWhere((p) => p[matchField] == matchValue);
+        _playerStreamControllers[roomCode]?.add(List.from(players));
+      }
+    } else if (table == AppConstants.roundsTable) {
+      for (final roomCode in List<String>.from(_mockRounds.keys)) {
+        if (_mockRounds[roomCode]?[matchField] == matchValue) {
+          _mockRounds.remove(roomCode);
+          _roundStreamControllers[roomCode]?.add(null);
+        }
+      }
+    }
   }
 }

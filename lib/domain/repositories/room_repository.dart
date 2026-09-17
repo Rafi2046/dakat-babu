@@ -35,4 +35,22 @@ abstract interface class RoomRepository {
 
   /// Streams the list of players currently joined in a room.
   Stream<List<PlayerModel>> watchPlayers(String roomCode);
+
+  /// Cancels and disbands a room, notifying all connected players.
+  Future<void> cancelRoom(String roomCode);
+
+  /// Host removes an unwanted or disconnected player from the room.
+  Future<void> removePlayer({
+    required String roomCode,
+    required String playerId,
+  });
+
+  /// Updates room lifecycle status (e.g., playerLeft, inProgress).
+  Future<void> updateRoomStatus({
+    required String roomCode,
+    required RoomStatus status,
+  });
+
+  /// Resets an active match back to lobby waiting state to replace a dropped player.
+  Future<void> returnToLobby(String roomCode);
 }

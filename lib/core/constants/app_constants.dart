@@ -29,6 +29,12 @@ abstract final class AppConstants {
   /// Total number of rounds in a standard match.
   static const int defaultTotalRounds = 5;
 
+  /// Inactivity timeout in minutes before an idle waiting lobby is flagged.
+  static const int lobbyTimeoutMinutes = 10;
+
+  /// Maximum attempts to generate a collision-free room code.
+  static const int maxRoomCodeRetries = 5;
+
   // --- Role Point Values ---
   /// Points awarded to the Raja (King).
   static const int rajaPoints = 1000;

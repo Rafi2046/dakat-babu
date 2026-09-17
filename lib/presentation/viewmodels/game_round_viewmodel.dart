@@ -5,6 +5,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/di/providers.dart';
 import '../../core/errors/failures.dart';
 import '../../data/models/player_model.dart';
+import '../../data/models/room_model.dart';
 import '../../data/models/round_model.dart';
 import '../../domain/repositories/game_repository.dart';
 import '../../domain/repositories/room_repository.dart';
@@ -13,21 +14,25 @@ import '../../domain/usecases/submit_guess_usecase.dart';
 /// State representation for an active game round.
 class GameRoundState {
   final RoundModel? round;
+  final RoomModel? room;
   final List<PlayerModel> players;
   final bool isCardRevealed;
   final String? selectedSuspectId;
   final int remainingSeconds;
   final bool isSubmittingGuess;
   final String? errorMessage;
+  final bool isCancelled;
 
   const GameRoundState({
     this.round,
+    this.room,
     this.players = const [],
     this.isCardRevealed = false,
     this.selectedSuspectId,
     this.remainingSeconds = AppConstants.roundTimeoutSeconds,
     this.isSubmittingGuess = false,
     this.errorMessage,
+    this.isCancelled = false,
   });
 
   /// The local user's player record.
@@ -36,6 +41,15 @@ class GameRoundState {
             (p) => p?.id == myId,
             orElse: () => null,
           );
+
+  /// Whether current local user is the room host.
+  bool isHost(String? myId) =>
+      players.any((p) => p.id == myId && p.isHost) || (room?.hostId == myId);
+
+  /// Whether a player has dropped or left the active match.
+  bool get isPlayerLeft =>
+      (players.length < AppConstants.maxPlayers && players.isNotEmpty) ||
+      (room?.status == RoomStatus.playerLeft);
 
   /// The player assigned to the Raja role.
   PlayerModel? get rajaPlayer =>
@@ -61,6 +75,7 @@ class GameRoundState {
 
   GameRoundState copyWith({
     RoundModel? round,
+    RoomModel? room,
     List<PlayerModel>? players,
     bool? isCardRevealed,
     String? selectedSuspectId,
@@ -68,15 +83,18 @@ class GameRoundState {
     bool? isSubmittingGuess,
     String? errorMessage,
     bool clearError = false,
+    bool? isCancelled,
   }) {
     return GameRoundState(
       round: round ?? this.round,
+      room: room ?? this.room,
       players: players ?? this.players,
       isCardRevealed: isCardRevealed ?? this.isCardRevealed,
       selectedSuspectId: selectedSuspectId ?? this.selectedSuspectId,
       remainingSeconds: remainingSeconds ?? this.remainingSeconds,
       isSubmittingGuess: isSubmittingGuess ?? this.isSubmittingGuess,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      isCancelled: isCancelled ?? this.isCancelled,
     );
   }
 }
@@ -89,6 +107,7 @@ class GameRoundViewModel extends StateNotifier<GameRoundState> {
   final SubmitGuessUseCase _submitGuessUseCase;
 
   StreamSubscription<RoundModel?>? _roundSub;
+  StreamSubscription<RoomModel?>? _roomSub;
   StreamSubscription<List<PlayerModel>>? _playersSub;
   Timer? _timer;
 
@@ -111,6 +130,21 @@ class GameRoundViewModel extends StateNotifier<GameRoundState> {
     _roundSub = _gameRepository.watchCurrentRound(_roomCode).listen(
       (round) {
         if (mounted) state = state.copyWith(round: round);
+      },
+      onError: (err) {
+        if (mounted) state = state.copyWith(errorMessage: err.toString());
+      },
+    );
+
+    _roomSub?.cancel();
+    _roomSub = _roomRepository.watchRoom(_roomCode).listen(
+      (room) {
+        if (!mounted) return;
+        if (room == null || room.status == RoomStatus.cancelled) {
+          state = state.copyWith(room: room, isCancelled: true);
+        } else {
+          state = state.copyWith(room: room);
+        }
       },
       onError: (err) {
         if (mounted) state = state.copyWith(errorMessage: err.toString());
@@ -176,10 +210,54 @@ class GameRoundViewModel extends StateNotifier<GameRoundState> {
     }
   }
 
+  /// Host resets room back to lobby waiting room so a 4th player can be invited/joined.
+  Future<bool> returnToLobby() async {
+    try {
+      await _roomRepository.returnToLobby(_roomCode);
+      return true;
+    } catch (e) {
+      if (mounted) {
+        final message = e is Failure ? e.message : e.toString();
+        state = state.copyWith(errorMessage: message);
+      }
+      return false;
+    }
+  }
+
+  /// Player leaves mid-game.
+  Future<bool> leaveGame(String playerId) async {
+    try {
+      await _roomRepository.leaveRoom(playerId: playerId, roomCode: _roomCode);
+      return true;
+    } catch (e) {
+      if (mounted) {
+        final message = e is Failure ? e.message : e.toString();
+        state = state.copyWith(errorMessage: message);
+      }
+      return false;
+    }
+  }
+
+  /// Host cancels/disbands the game mid-round.
+  Future<bool> cancelGame() async {
+    try {
+      await _roomRepository.cancelRoom(_roomCode);
+      if (mounted) state = state.copyWith(isCancelled: true);
+      return true;
+    } catch (e) {
+      if (mounted) {
+        final message = e is Failure ? e.message : e.toString();
+        state = state.copyWith(errorMessage: message);
+      }
+      return false;
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
     _roundSub?.cancel();
+    _roomSub?.cancel();
     _playersSub?.cancel();
     super.dispose();
   }

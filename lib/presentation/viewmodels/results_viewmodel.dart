@@ -5,6 +5,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/di/providers.dart';
 import '../../core/errors/failures.dart';
 import '../../data/models/player_model.dart';
+import '../../data/models/room_model.dart';
 import '../../data/models/round_model.dart';
 import '../../domain/repositories/game_repository.dart';
 import '../../domain/repositories/room_repository.dart';
@@ -13,15 +14,19 @@ import '../../domain/usecases/assign_roles_usecase.dart';
 /// State representation for round and match results screen.
 class ResultsState {
   final RoundModel? round;
+  final RoomModel? room;
   final List<PlayerModel> players;
   final bool isAdvancing;
   final String? errorMessage;
+  final bool isCancelled;
 
   const ResultsState({
     this.round,
+    this.room,
     this.players = const [],
     this.isAdvancing = false,
     this.errorMessage,
+    this.isCancelled = false,
   });
 
   /// Leaderboard ordered by descending score.
@@ -30,6 +35,11 @@ class ResultsState {
     list.sort((a, b) => b.score.compareTo(a.score));
     return list;
   }
+
+  /// Whether a player dropped out mid-game.
+  bool get isPlayerLeft =>
+      (players.length < AppConstants.maxPlayers && players.isNotEmpty) ||
+      (room?.status == RoomStatus.playerLeft);
 
   /// The player who was the Chor in this round.
   PlayerModel? get chorPlayer =>
@@ -54,7 +64,7 @@ class ResultsState {
 
   /// Whether current user is the room host.
   bool isHost(String? myId) =>
-      players.any((p) => p.id == myId && p.isHost);
+      players.any((p) => p.id == myId && p.isHost) || (room?.hostId == myId);
 
   /// Whether this match has concluded all configured rounds.
   bool get isMatchOver =>
@@ -62,16 +72,20 @@ class ResultsState {
 
   ResultsState copyWith({
     RoundModel? round,
+    RoomModel? room,
     List<PlayerModel>? players,
     bool? isAdvancing,
     String? errorMessage,
     bool clearError = false,
+    bool? isCancelled,
   }) {
     return ResultsState(
       round: round ?? this.round,
+      room: room ?? this.room,
       players: players ?? this.players,
       isAdvancing: isAdvancing ?? this.isAdvancing,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      isCancelled: isCancelled ?? this.isCancelled,
     );
   }
 }
@@ -84,6 +98,7 @@ class ResultsViewModel extends StateNotifier<ResultsState> {
   final AssignRolesUseCase _assignRolesUseCase;
 
   StreamSubscription<RoundModel?>? _roundSub;
+  StreamSubscription<RoomModel?>? _roomSub;
   StreamSubscription<List<PlayerModel>>? _playersSub;
 
   ResultsViewModel({
@@ -104,6 +119,21 @@ class ResultsViewModel extends StateNotifier<ResultsState> {
     _roundSub = _gameRepository.watchCurrentRound(_roomCode).listen(
       (round) {
         if (mounted) state = state.copyWith(round: round);
+      },
+      onError: (err) {
+        if (mounted) state = state.copyWith(errorMessage: err.toString());
+      },
+    );
+
+    _roomSub?.cancel();
+    _roomSub = _roomRepository.watchRoom(_roomCode).listen(
+      (room) {
+        if (!mounted) return;
+        if (room == null || room.status == RoomStatus.cancelled) {
+          state = state.copyWith(room: room, isCancelled: true);
+        } else {
+          state = state.copyWith(room: room);
+        }
       },
       onError: (err) {
         if (mounted) state = state.copyWith(errorMessage: err.toString());
@@ -154,9 +184,53 @@ class ResultsViewModel extends StateNotifier<ResultsState> {
     }
   }
 
+  /// Host resets room back to lobby waiting room so a replacement can join.
+  Future<bool> returnToLobby() async {
+    try {
+      await _roomRepository.returnToLobby(_roomCode);
+      return true;
+    } catch (e) {
+      if (mounted) {
+        final message = e is Failure ? e.message : e.toString();
+        state = state.copyWith(errorMessage: message);
+      }
+      return false;
+    }
+  }
+
+  /// Player leaves mid-game from results.
+  Future<bool> leaveGame(String playerId) async {
+    try {
+      await _roomRepository.leaveRoom(playerId: playerId, roomCode: _roomCode);
+      return true;
+    } catch (e) {
+      if (mounted) {
+        final message = e is Failure ? e.message : e.toString();
+        state = state.copyWith(errorMessage: message);
+      }
+      return false;
+    }
+  }
+
+  /// Host cancels/disbands the game from results.
+  Future<bool> cancelGame() async {
+    try {
+      await _roomRepository.cancelRoom(_roomCode);
+      if (mounted) state = state.copyWith(isCancelled: true);
+      return true;
+    } catch (e) {
+      if (mounted) {
+        final message = e is Failure ? e.message : e.toString();
+        state = state.copyWith(errorMessage: message);
+      }
+      return false;
+    }
+  }
+
   @override
   void dispose() {
     _roundSub?.cancel();
+    _roomSub?.cancel();
     _playersSub?.cancel();
     super.dispose();
   }

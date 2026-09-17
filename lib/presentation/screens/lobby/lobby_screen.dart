@@ -12,9 +12,11 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/utils/extensions.dart';
+import '../../../data/models/player_model.dart';
 import '../../../data/models/room_model.dart';
 import '../../viewmodels/lobby_viewmodel.dart';
 import '../../widgets/animated_living_background.dart';
+import '../../widgets/app_feedback.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/game_card.dart';
 import '../../widgets/player_tile.dart';
@@ -36,14 +38,22 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
         ref.watch(supabaseServiceProvider).currentUserId;
     final lobbyState = ref.watch(lobbyViewModelProvider(widget.roomCode));
 
-    // Listen to game status to automatically navigate guests when match starts
+    // Listen to game status, cancellation, and errors
     ref.listen<LobbyState>(lobbyViewModelProvider(widget.roomCode), (prev, current) {
+      if (current.isCancelled && !(prev?.isCancelled ?? false)) {
+        AppFeedback.showRoomCancelledDialog(context);
+        return;
+      }
       if (current.room?.status == RoomStatus.inProgress) {
         context.go(AppRoutes.gameRoundPath(widget.roomCode));
       }
       if (current.errorMessage != null &&
           current.errorMessage != prev?.errorMessage) {
-        context.showErrorSnackBar(current.errorMessage!);
+        AppFeedback.showSnackBar(
+          context,
+          message: current.errorMessage!,
+          isError: true,
+        );
       }
     });
 
@@ -56,8 +66,25 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
         title: Text('Royal Lobby', style: AppTextStyles.heading2()),
         leading: IconButton(
           icon: Icon(PhosphorIcons.arrowLeft(PhosphorIconsStyle.bold)),
-          onPressed: () => context.go(AppRoutes.home),
+          onPressed: () => _handleLeave(context, isHost, currentUserId),
         ),
+        actions: [
+          if (isHost)
+            TextButton.icon(
+              onPressed: () => _handleCancelRoom(context),
+              icon: Icon(
+                PhosphorIcons.xCircle(PhosphorIconsStyle.bold),
+                color: AppColors.error,
+                size: 18,
+              ),
+              label: Text(
+                'Cancel',
+                style: AppTextStyles.caption(color: AppColors.error).copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+        ],
       ),
       body: AnimatedLivingBackground(
         child: SafeArea(
@@ -185,6 +212,9 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                         return PlayerTile(
                           player: player,
                           showReadyStatus: true,
+                          onRemove: (isHost && player.id != currentUserId)
+                              ? () => _handleRemovePlayer(context, player)
+                              : null,
                         );
                       }
                       // Empty slot placeholder with glassmorphism feel
@@ -220,6 +250,53 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                     },
                   ),
                 ),
+
+                // --- Idle Lobby Timeout Warning Banner ---
+                if (lobbyState.isIdleTimedOut) ...[
+                  Container(
+                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.15),
+                      borderRadius: AppRadius.chipRadius,
+                      border: Border.all(
+                        color: AppColors.warning.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          PhosphorIcons.clockCountdown(PhosphorIconsStyle.bold),
+                          color: AppColors.warning,
+                          size: 18,
+                        ),
+                        AppSpacing.gapHSm,
+                        Expanded(
+                          child: Text(
+                            'Lobby has been idle for 10+ mins.',
+                            style: AppTextStyles.caption(color: AppColors.warning).copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        if (isHost)
+                          GestureDetector(
+                            onTap: () => _handleCancelRoom(context),
+                            child: Text(
+                              'Close Room',
+                              style: AppTextStyles.caption(color: AppColors.error).copyWith(
+                                fontWeight: FontWeight.w800,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
 
                 // --- Action Controls ---
                 if (isHost)
@@ -270,5 +347,56 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleLeave(BuildContext context, bool isHost, String? currentUserId) async {
+    if (currentUserId == null) {
+      context.go(AppRoutes.home);
+      return;
+    }
+
+    final shouldLeave = await AppFeedback.showConfirmationDialog(
+      context,
+      title: 'Leave Lobby?',
+      message: isHost
+          ? 'As host, leaving will reassign leadership to the next joined player, or close the room if no players remain.'
+          : 'Are you sure you want to leave this room?',
+      confirmLabel: 'Leave Room',
+      isDestructive: true,
+    );
+
+    if (shouldLeave && context.mounted) {
+      await ref.read(lobbyViewModelProvider(widget.roomCode).notifier).leaveRoom(currentUserId);
+      if (context.mounted) context.go(AppRoutes.home);
+    }
+  }
+
+  Future<void> _handleCancelRoom(BuildContext context) async {
+    final confirmed = await AppFeedback.showConfirmationDialog(
+      context,
+      title: 'Cancel Room?',
+      message: 'Are you sure you want to cancel and disband this room? All joined players will return to the home screen.',
+      confirmLabel: 'Cancel Room',
+      isDestructive: true,
+    );
+
+    if (confirmed && context.mounted) {
+      await ref.read(lobbyViewModelProvider(widget.roomCode).notifier).cancelRoom();
+      if (context.mounted) context.go(AppRoutes.home);
+    }
+  }
+
+  Future<void> _handleRemovePlayer(BuildContext context, PlayerModel player) async {
+    final confirmed = await AppFeedback.showConfirmationDialog(
+      context,
+      title: 'Remove Player?',
+      message: 'Do you want to remove "${player.name}" from this lobby?',
+      confirmLabel: 'Remove',
+      isDestructive: true,
+    );
+
+    if (confirmed && context.mounted) {
+      await ref.read(lobbyViewModelProvider(widget.roomCode).notifier).removePlayer(player.id);
+    }
   }
 }
