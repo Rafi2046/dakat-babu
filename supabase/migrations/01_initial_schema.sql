@@ -72,6 +72,10 @@ create policy "Allow public update on rooms"
   on public.rooms for update 
   using (true);
 
+create policy "Allow public delete on rooms" 
+  on public.rooms for delete 
+  using (true);
+
 -- Players policies
 create policy "Allow public read on players" 
   on public.players for select 
@@ -85,6 +89,10 @@ create policy "Allow public update on players"
   on public.players for update 
   using (true);
 
+create policy "Allow public delete on players" 
+  on public.players for delete 
+  using (true);
+
 -- Game Rounds policies
 create policy "Allow public read on game_rounds" 
   on public.game_rounds for select 
@@ -96,4 +104,8 @@ create policy "Allow public insert on game_rounds"
 
 create policy "Allow public update on game_rounds" 
   on public.game_rounds for update 
+  using (true);
+
+create policy "Allow public delete on game_rounds" 
+  on public.game_rounds for delete 
   using (true);

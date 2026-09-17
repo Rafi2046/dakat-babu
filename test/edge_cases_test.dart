@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:dakat_babu/core/constants/app_constants.dart';
 import 'package:dakat_babu/core/errors/failures.dart';
-import 'package:dakat_babu/data/models/player_model.dart';
 import 'package:dakat_babu/data/models/room_model.dart';
 import 'package:dakat_babu/data/models/round_model.dart';
 import 'package:dakat_babu/data/repositories/game_repository_impl.dart';
@@ -26,8 +25,8 @@ void main() {
     test('Leaving mid-game flags room as playerLeft and host can return to lobby', () async {
       // 1. Create room and join 4 players
       final room = await roomRepository.createRoom(hostName: 'HostRafi');
-      final p2 = await roomRepository.joinRoom(roomCode: room.roomCode, playerName: 'Topshe');
-      final p3 = await roomRepository.joinRoom(roomCode: room.roomCode, playerName: 'Jatayu');
+      await roomRepository.joinRoom(roomCode: room.roomCode, playerName: 'Topshe');
+      await roomRepository.joinRoom(roomCode: room.roomCode, playerName: 'Jatayu');
       final p4 = await roomRepository.joinRoom(roomCode: room.roomCode, playerName: 'Maganlal');
 
       // 2. Start round 1
@@ -76,7 +75,7 @@ void main() {
     test('Host leaves in lobby: host is reassigned to next player in line', () async {
       final room = await roomRepository.createRoom(hostName: 'HostRafi');
       final p2 = await roomRepository.joinRoom(roomCode: room.roomCode, playerName: 'Topshe');
-      final p3 = await roomRepository.joinRoom(roomCode: room.roomCode, playerName: 'Jatayu');
+      await roomRepository.joinRoom(roomCode: room.roomCode, playerName: 'Jatayu');
 
       var players = await roomRepository.getPlayers(room.roomCode);
       expect(players.length, 3);
