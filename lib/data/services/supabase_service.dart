@@ -57,7 +57,7 @@ class SupabaseService {
     String? url,
     String? anonKey,
   }) async {
-    final effectiveUrl = AppConstants.cleanSupabaseUrl;
+    final effectiveUrl = url ?? AppConstants.cleanSupabaseUrl;
     final effectiveKey = anonKey ?? AppConstants.supabaseAnonKey;
     final isPlaceholder = effectiveUrl.contains('placeholder') || effectiveKey.contains('placeholder');
 
