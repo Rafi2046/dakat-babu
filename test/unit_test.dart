@@ -53,6 +53,18 @@ class FakeRoomRepository implements RoomRepository {
 
   @override
   Stream<RoomModel?> watchRoom(String roomCode) => Stream.value(null);
+
+  @override
+  Future<void> cancelRoom(String roomCode) async {}
+
+  @override
+  Future<void> removePlayer({required String roomCode, required String playerId}) async {}
+
+  @override
+  Future<void> updateRoomStatus({required String roomCode, required RoomStatus status}) async {}
+
+  @override
+  Future<void> returnToLobby(String roomCode) async {}
 }
 
 void main() {

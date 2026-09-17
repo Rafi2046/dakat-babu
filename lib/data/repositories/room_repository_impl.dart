@@ -16,7 +16,7 @@ class RoomRepositoryImpl implements RoomRepository {
 
   @override
   Future<RoomModel> createRoom({required String hostName}) async {
-    final hostId = await _supabaseService.getOrSignInAnonymousUserId();
+    final hostAuthId = await _supabaseService.getOrSignInAnonymousUserId();
     final now = DateTime.now();
 
     for (var attempt = 1; attempt <= AppConstants.maxRoomCodeRetries; attempt++) {
@@ -34,9 +34,10 @@ class RoomRepositoryImpl implements RoomRepository {
         continue;
       }
 
+      final hostPlayerId = '${hostAuthId}_${roomCode}_${DateTime.now().millisecondsSinceEpoch}';
       final roomId = 'room_${DateTime.now().millisecondsSinceEpoch}_${_generateRandomSuffix()}';
       final hostPlayer = PlayerModel(
-        id: hostId,
+        id: hostPlayerId,
         roomCode: roomCode,
         name: hostName.trim(),
         isHost: true,
@@ -47,7 +48,7 @@ class RoomRepositoryImpl implements RoomRepository {
       final room = RoomModel(
         id: roomId,
         roomCode: roomCode,
-        hostId: hostId,
+        hostId: hostPlayerId,
         status: RoomStatus.waiting,
         currentRound: 0,
         maxRounds: AppConstants.defaultTotalRounds,
@@ -117,10 +118,7 @@ class RoomRepositoryImpl implements RoomRepository {
 
       // 3. Get joining player's anonymous ID
       final authUserId = await _supabaseService.getOrSignInAnonymousUserId();
-      final alreadyJoined = existingPlayers.any((p) => p['id'] == authUserId);
-      final playerId = alreadyJoined
-          ? '${authUserId}_${DateTime.now().millisecondsSinceEpoch}'
-          : authUserId;
+      final playerId = '${authUserId}_${cleanCode}_${DateTime.now().millisecondsSinceEpoch}_${_generateRandomSuffix()}';
 
       final player = PlayerModel(
         id: playerId,

@@ -8,10 +8,10 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/routes/app_routes.dart';
-import '../../../core/utils/extensions.dart';
 import '../../../core/utils/validators.dart';
 import '../../viewmodels/home_viewmodel.dart';
 import '../../widgets/animated_living_background.dart';
+import '../../widgets/app_feedback.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/game_card.dart';
 import '../../widgets/role_art.dart';
@@ -54,7 +54,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Listen to ViewModel errors
     ref.listen<HomeState>(homeViewModelProvider, (prev, next) {
       if (next.errorMessage != null && next.errorMessage != prev?.errorMessage) {
-        context.showErrorSnackBar(next.errorMessage!);
+        AppFeedback.showSnackBar(
+          context,
+          message: next.errorMessage!,
+          isError: true,
+        );
       }
     });
 
