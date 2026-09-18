@@ -61,6 +61,12 @@ class RoundModel {
   /// Player ID assigned to the Chor role.
   final String chorPlayerId;
 
+  /// Player ID assigned to the Chintaykari role (5th player, nullable).
+  final String? chintaykariPlayerId;
+
+  /// Player ID assigned to the Batpar role (6th player, nullable).
+  final String? batparPlayerId;
+
   /// Suspect player ID chosen by the Police (null until submitted).
   final String? policeGuessPlayerId;
 
@@ -81,6 +87,8 @@ class RoundModel {
     required this.mantriPlayerId,
     required this.policePlayerId,
     required this.chorPlayerId,
+    this.chintaykariPlayerId,
+    this.batparPlayerId,
     this.policeGuessPlayerId,
     this.isGuessCorrect,
     this.status = RoundStatus.roleReveal,
@@ -96,6 +104,8 @@ class RoundModel {
     String? mantriPlayerId,
     String? policePlayerId,
     String? chorPlayerId,
+    String? chintaykariPlayerId,
+    String? batparPlayerId,
     String? policeGuessPlayerId,
     bool? isGuessCorrect,
     RoundStatus? status,
@@ -109,6 +119,8 @@ class RoundModel {
       mantriPlayerId: mantriPlayerId ?? this.mantriPlayerId,
       policePlayerId: policePlayerId ?? this.policePlayerId,
       chorPlayerId: chorPlayerId ?? this.chorPlayerId,
+      chintaykariPlayerId: chintaykariPlayerId ?? this.chintaykariPlayerId,
+      batparPlayerId: batparPlayerId ?? this.batparPlayerId,
       policeGuessPlayerId: policeGuessPlayerId ?? this.policeGuessPlayerId,
       isGuessCorrect: isGuessCorrect ?? this.isGuessCorrect,
       status: status ?? this.status,
@@ -126,6 +138,8 @@ class RoundModel {
       mantriPlayerId: json['mantri_player_id'] as String,
       policePlayerId: json['police_player_id'] as String,
       chorPlayerId: json['chor_player_id'] as String,
+      chintaykariPlayerId: json['chintaykari_player_id'] as String?,
+      batparPlayerId: json['batpar_player_id'] as String?,
       policeGuessPlayerId: json['police_guess_player_id'] as String?,
       isGuessCorrect: json['is_guess_correct'] as bool?,
       status: RoundStatus.parse(json['status'] as String?),
@@ -136,8 +150,8 @@ class RoundModel {
   }
 
   /// Serializes this [RoundModel] into a Supabase-compatible JSON map.
-  Map<String, dynamic> toJson() {
-    return {
+  Map<String, dynamic> toJson({bool includeExtendedRoles = true}) {
+    final map = <String, dynamic>{
       'id': id,
       'room_code': roomCode,
       'round_number': roundNumber,
@@ -150,6 +164,13 @@ class RoundModel {
       'status': status.toDbValue(),
       'created_at': createdAt.toIso8601String(),
     };
+
+    if (includeExtendedRoles) {
+      if (chintaykariPlayerId != null) map['chintaykari_player_id'] = chintaykariPlayerId;
+      if (batparPlayerId != null) map['batpar_player_id'] = batparPlayerId;
+    }
+
+    return map;
   }
 
   @override

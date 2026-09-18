@@ -51,6 +51,7 @@ class SupabaseService {
   final _roomStreamControllers = <String, StreamController<Map<String, dynamic>?> >{};
   final _playerStreamControllers = <String, StreamController<List<Map<String, dynamic>>> >{};
   final _roundStreamControllers = <String, StreamController<Map<String, dynamic>?> >{};
+  final _allRoundsStreamControllers = <String, StreamController<List<Map<String, dynamic>>> >{};
 
   /// Initializes the Supabase client connection.
   Future<void> initialize({
@@ -176,6 +177,33 @@ class SupabaseService {
           .map((data) => data.isNotEmpty ? data.first : null);
     } catch (e) {
       throw ServerFailure('Failed to subscribe to round updates: $e');
+    }
+  }
+
+  /// Streams all rounds for a room ordered by round_number ascending.
+  Stream<List<Map<String, dynamic>>> streamAllRounds(String roomCode) {
+    if (!_isConfigured || _client == null) {
+      _allRoundsStreamControllers.putIfAbsent(
+        roomCode,
+        () => StreamController<List<Map<String, dynamic>>>.broadcast(),
+      );
+      Timer.run(() {
+        if (!_allRoundsStreamControllers[roomCode]!.isClosed) {
+          final single = _mockRounds[roomCode];
+          _allRoundsStreamControllers[roomCode]!.add(single != null ? [single] : []);
+        }
+      });
+      return _allRoundsStreamControllers[roomCode]!.stream;
+    }
+
+    try {
+      return _client!
+          .from(AppConstants.roundsTable)
+          .stream(primaryKey: ['id'])
+          .eq('room_code', roomCode)
+          .order('round_number', ascending: true);
+    } catch (e) {
+      throw ServerFailure('Failed to subscribe to all rounds: $e');
     }
   }
 

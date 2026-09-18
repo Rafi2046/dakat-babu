@@ -17,8 +17,11 @@ abstract final class AppConstants {
   /// Required minimum number of players to start a round.
   static const int minPlayers = 4;
 
-  /// Required maximum number of players per classic game room.
-  static const int maxPlayers = 4;
+  /// Required maximum number of players per game room (supports 4, 5, or 6).
+  static const int maxPlayers = 6;
+
+  /// Default player count for standard rooms.
+  static const int defaultPlayers = 4;
 
   /// Length of the alphanumeric room join code.
   static const int roomCodeLength = 6;
@@ -35,7 +38,7 @@ abstract final class AppConstants {
   /// Maximum attempts to generate a collision-free room code.
   static const int maxRoomCodeRetries = 5;
 
-  // --- Role Point Values ---
+  // --- Role Point Values (Defaults) ---
   /// Points awarded to the Raja (King).
   static const int rajaPoints = 1000;
 
@@ -53,6 +56,12 @@ abstract final class AppConstants {
 
   /// Points awarded to the Police when they guess incorrectly.
   static const int policeWrongPoints = 0;
+
+  /// Default points awarded to Chintaykari (5th player civilian role).
+  static const int chintaykariDefaultPoints = 500;
+
+  /// Default points awarded to Batpar (6th player civilian role).
+  static const int batparDefaultPoints = 300;
 
   // --- Supabase Table Names ---
   /// Database table for game rooms.
@@ -97,7 +106,7 @@ abstract final class AppConstants {
   }
 }
 
-/// The 4 traditional game roles in Chor-Police-Raja-Mantri.
+/// The game roles in Chor-Police-Raja-Mantri (supports up to 6 players).
 enum GameRole {
   /// King (1000 points) - declares themself at the start of the round.
   raja,
@@ -109,7 +118,13 @@ enum GameRole {
   police,
 
   /// Thief/Dakat (0 or 500 points) - attempts to deceive the Police.
-  chor;
+  chor,
+
+  /// 5th Player Role: Chintaykari (Snatcher/Mugger) - civilian role in suspect pool, fixed points.
+  chintaykari,
+
+  /// 6th Player Role: Batpar (Swindler/Hustler) - civilian role in suspect pool, fixed points.
+  batpar;
 
   /// Parses a string into a [GameRole], returning null if not found.
   static GameRole? tryParse(String? value) {

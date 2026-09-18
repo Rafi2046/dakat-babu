@@ -99,6 +99,10 @@ extension GameRoleX on GameRole {
         return 'Police (Inspector)';
       case GameRole.chor:
         return 'Chor (Thief)';
+      case GameRole.chintaykari:
+        return 'Chintaykari (Snatcher)';
+      case GameRole.batpar:
+        return 'Batpar (Swindler)';
     }
   }
 
@@ -113,6 +117,10 @@ extension GameRoleX on GameRole {
         return 'Police';
       case GameRole.chor:
         return 'Chor';
+      case GameRole.chintaykari:
+        return 'Chintaykari';
+      case GameRole.batpar:
+        return 'Batpar';
     }
   }
 
@@ -127,6 +135,10 @@ extension GameRoleX on GameRole {
         return AppConstants.policeCorrectPoints;
       case GameRole.chor:
         return AppConstants.chorSuccessPoints;
+      case GameRole.chintaykari:
+        return AppConstants.chintaykariDefaultPoints;
+      case GameRole.batpar:
+        return AppConstants.batparDefaultPoints;
     }
   }
 
@@ -141,6 +153,10 @@ extension GameRoleX on GameRole {
         return AppColors.police;
       case GameRole.chor:
         return AppColors.chor;
+      case GameRole.chintaykari:
+        return AppColors.chintaykari;
+      case GameRole.batpar:
+        return AppColors.batpar;
     }
   }
 
@@ -155,6 +171,10 @@ extension GameRoleX on GameRole {
         return AppColors.policeContainer;
       case GameRole.chor:
         return AppColors.chorContainer;
+      case GameRole.chintaykari:
+        return AppColors.chintaykariContainer;
+      case GameRole.batpar:
+        return AppColors.batparContainer;
     }
   }
 
@@ -169,6 +189,10 @@ extension GameRoleX on GameRole {
         return AppColors.policeGradient;
       case GameRole.chor:
         return AppColors.chorGradient;
+      case GameRole.chintaykari:
+        return AppColors.chintaykariGradient;
+      case GameRole.batpar:
+        return AppColors.batparGradient;
     }
   }
 
@@ -182,6 +206,8 @@ extension GameRoleX on GameRole {
       case GameRole.police:
         return AppAssets.policeBadge;
       case GameRole.chor:
+      case GameRole.chintaykari:
+      case GameRole.batpar:
         return AppAssets.chorMask;
     }
   }
@@ -194,9 +220,13 @@ extension GameRoleX on GameRole {
       case GameRole.mantri:
         return 'You are the Minister! Support the King and observe quietly. You earn 800 points automatically.';
       case GameRole.police:
-        return 'You are the Police! You must interrogate the suspects and deduce who the Chor is. Guess right for 500 points!';
+        return 'You are the Police! You must interrogate the suspects and deduce who the Chor is. Guess right for points!';
       case GameRole.chor:
-        return 'You are the Chor (Thief)! Keep a straight face and deceive the Police. If they guess wrong, you steal 500 points!';
+        return 'You are the Chor (Thief)! Keep a straight face and deceive the Police. If they guess wrong, you steal points!';
+      case GameRole.chintaykari:
+        return 'You are the Chintaykari (Snatcher)! Blend into the crowd and confuse the Police. You earn your points safely!';
+      case GameRole.batpar:
+        return 'You are the Batpar (Swindler)! Act natural and keep the Police guessing. You earn your points safely!';
     }
   }
 }

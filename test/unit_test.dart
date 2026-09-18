@@ -14,11 +14,21 @@ import 'package:dakat_babu/domain/repositories/room_repository.dart';
 
 class FakeRoomRepository implements RoomRepository {
   @override
-  Future<RoomModel> createRoom({required String hostName}) async {
+  Future<RoomModel> createRoom({
+    required String hostName,
+    int maxPlayers = 4,
+    String rolePreset = 'classic',
+    Map<String, String>? roleLabels,
+    Map<String, int>? rolePoints,
+  }) async {
     return RoomModel(
       id: 'room_1',
       roomCode: 'ABC123',
       hostId: 'host_1',
+      maxPlayers: maxPlayers,
+      rolePreset: rolePreset,
+      roleLabels: roleLabels,
+      rolePoints: rolePoints,
       createdAt: DateTime.now(),
     );
   }

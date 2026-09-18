@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_radius.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -172,7 +171,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                         ),
                         AppSpacing.gapHSm,
                         Text(
-                          'COURT PLAYERS (${lobbyState.players.length}/${AppConstants.maxPlayers})',
+                          'COURT PLAYERS (${lobbyState.players.length}/${lobbyState.requiredPlayers})',
                           style: AppTextStyles.heading3().copyWith(
                             letterSpacing: 0.5,
                             fontWeight: FontWeight.w800,
@@ -191,7 +190,9 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                         ),
                       ),
                       child: Text(
-                        lobbyState.canStartGame ? 'READY TO PLAY' : 'WAITING FOR 4',
+                        lobbyState.canStartGame
+                            ? 'READY TO PLAY'
+                            : 'WAITING FOR ${lobbyState.requiredPlayers}',
                         style: AppTextStyles.caption(
                           color: lobbyState.canStartGame ? AppColors.success : AppColors.warning,
                         ).copyWith(fontWeight: FontWeight.w800),
@@ -201,10 +202,10 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                 ),
                 AppSpacing.gapVSm,
 
-                // --- 4 Player Slots ---
+                // --- Dynamic Player Slots ---
                 Expanded(
                   child: ListView.separated(
-                    itemCount: AppConstants.maxPlayers,
+                    itemCount: lobbyState.requiredPlayers,
                     separatorBuilder: (context, index) => AppSpacing.gapVSm,
                     itemBuilder: (context, index) {
                       if (index < lobbyState.players.length) {
@@ -303,7 +304,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                   CustomButton(
                     label: lobbyState.canStartGame
                         ? 'Start Game'
-                        : 'Waiting for Players (${lobbyState.players.length}/4)',
+                        : 'Waiting for Players (${lobbyState.players.length}/${lobbyState.requiredPlayers})',
                     leading: Icon(
                       PhosphorIcons.play(PhosphorIconsStyle.fill),
                       color: Colors.white,

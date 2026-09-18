@@ -32,8 +32,11 @@ class LobbyState {
         players.any((p) => p.id == currentUserId && p.isHost);
   }
 
-  /// Whether exactly 4 players have joined.
-  bool get canStartGame => players.length == AppConstants.maxPlayers;
+  /// Number of players required to start according to room settings (4, 5, or 6).
+  int get requiredPlayers => room?.maxPlayers ?? AppConstants.defaultPlayers;
+
+  /// Whether all required players have joined.
+  bool get canStartGame => players.length == requiredPlayers;
 
   /// Whether the waiting lobby has exceeded idle timeout.
   bool get isIdleTimedOut {
@@ -188,7 +191,7 @@ class LobbyViewModel extends StateNotifier<LobbyState> {
   Future<bool> startGame() async {
     if (!state.canStartGame) {
       state = state.copyWith(
-        errorMessage: 'Need exactly ${AppConstants.maxPlayers} players to start (currently ${state.players.length}).',
+        errorMessage: 'Need exactly ${state.requiredPlayers} players to start (currently ${state.players.length}).',
       );
       return false;
     }

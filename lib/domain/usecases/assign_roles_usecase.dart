@@ -16,9 +16,9 @@ class AssignRolesUseCase {
     required List<PlayerModel> players,
     required int roundNumber,
   }) async {
-    if (players.length != AppConstants.maxPlayers) {
+    if (players.length < AppConstants.minPlayers || players.length > AppConstants.maxPlayers) {
       throw GameRuleFailure(
-        'Cannot start round: DakatBabu requires exactly ${AppConstants.maxPlayers} players. Currently ${players.length} present.',
+        'Cannot start round: DakatBabu requires ${AppConstants.minPlayers} to ${AppConstants.maxPlayers} players. Currently ${players.length} present.',
       );
     }
 

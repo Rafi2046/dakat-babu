@@ -9,7 +9,9 @@ import '../../../core/constants/app_radius.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../../core/utils/extensions.dart';
 import '../../../core/utils/validators.dart';
+import '../../../data/models/role_preset_model.dart';
 import '../../viewmodels/home_viewmodel.dart';
 import '../../widgets/animated_living_background.dart';
 import '../../widgets/app_feedback.dart';
@@ -32,6 +34,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // 0: Create Room, 1: Join Room
   int _selectedTabIndex = 0;
 
+  // Customization settings for room creation
+  int _selectedPlayerCount = 4;
+  RolePresetModel _selectedPreset = RolePresetModel.classic;
+  bool _showCustomSettings = false;
+
+  late final Map<GameRole, TextEditingController> _roleNameControllers;
+  late final Map<GameRole, TextEditingController> _rolePointControllers;
+
   // Text Editing Controllers
   final _createNameController = TextEditingController();
   final _joinCodeController = TextEditingController();
@@ -41,10 +51,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _joinFormKey = GlobalKey<FormState>();
 
   @override
+  void initState() {
+    super.initState();
+    _roleNameControllers = {
+      for (final role in GameRole.values)
+        role: TextEditingController(text: _selectedPreset.getLabel(role)),
+    };
+    _rolePointControllers = {
+      for (final role in GameRole.values)
+        role: TextEditingController(text: role.points.toString()),
+    };
+  }
+
+  void _onPresetSelected(RolePresetModel preset) {
+    setState(() {
+      _selectedPreset = preset;
+      for (final role in GameRole.values) {
+        _roleNameControllers[role]?.text = preset.getLabel(role);
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _createNameController.dispose();
     _joinCodeController.dispose();
     _joinNameController.dispose();
+    for (final c in _roleNameControllers.values) {
+      c.dispose();
+    }
+    for (final c in _rolePointControllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -444,6 +482,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildCreateRoomForm(HomeState state) {
+    // Determine which roles are active based on selected player count
+    final activeRoles = [
+      GameRole.raja,
+      GameRole.mantri,
+      GameRole.police,
+      GameRole.chor,
+      if (_selectedPlayerCount >= 5) GameRole.chintaykari,
+      if (_selectedPlayerCount >= 6) GameRole.batpar,
+    ];
+
     return Form(
       key: _createFormKey,
       child: Column(
@@ -469,10 +517,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           const SizedBox(height: 3),
           Text(
-            'Enter your name to start a new 4-player room.',
+            'Configure your room settings and start playing.',
             style: AppTextStyles.caption(color: AppColors.textLightSecondary),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
+
+          // Host Name Input
           TextFormField(
             controller: _createNameController,
             textCapitalization: TextCapitalization.words,
@@ -487,7 +537,260 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             validator: Validators.validatePlayerName,
           ),
+
+          const SizedBox(height: 14),
+
+          // 1. Player Count Selector (4, 5, or 6)
+          Text(
+            'NUMBER OF PLAYERS',
+            style: AppTextStyles.caption(color: AppColors.textLightSecondary).copyWith(
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.8,
+              fontSize: 10.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [4, 5, 6].map((count) {
+              final isSelected = _selectedPlayerCount == count;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () => setState(() => _selectedPlayerCount = count),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.primary.withValues(alpha: 0.35)
+                            : Colors.white.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primaryLight
+                              : Colors.white.withValues(alpha: 0.12),
+                          width: isSelected ? 1.5 : 1.0,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '$count Players',
+                            style: AppTextStyles.bodyMedium().copyWith(
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                              color: isSelected ? Colors.white : AppColors.textLightSecondary,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                          if (count == 5)
+                            Text(
+                              '+Chintaykari',
+                              style: AppTextStyles.caption(color: AppColors.chintaykari)
+                                  .copyWith(fontSize: 9),
+                            )
+                          else if (count == 6)
+                            Text(
+                              '+Batpar',
+                              style: AppTextStyles.caption(color: AppColors.batpar)
+                                  .copyWith(fontSize: 9),
+                            )
+                          else
+                            Text(
+                              'Classic',
+                              style: AppTextStyles.caption(color: AppColors.textLightMuted)
+                                  .copyWith(fontSize: 9),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 14),
+
+          // 2. Role Preset Selector
+          Text(
+            'ROLE PRESET',
+            style: AppTextStyles.caption(color: AppColors.textLightSecondary).copyWith(
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.8,
+              fontSize: 10.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: RolePresetModel.builtInPresets.map((preset) {
+              final isSelected = _selectedPreset.id == preset.id;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () => _onPresetSelected(preset),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.secondary.withValues(alpha: 0.22)
+                            : Colors.white.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.secondary
+                              : Colors.white.withValues(alpha: 0.12),
+                          width: isSelected ? 1.5 : 1.0,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                preset.id == 'classic'
+                                    ? PhosphorIcons.crown(PhosphorIconsStyle.fill)
+                                    : PhosphorIcons.maskHappy(PhosphorIconsStyle.fill),
+                                size: 14,
+                                color: isSelected ? AppColors.secondary : Colors.white70,
+                              ),
+                              const SizedBox(width: 5),
+                              Expanded(
+                                child: Text(
+                                  preset.id == 'classic' ? 'Classic' : 'Dakat Babu',
+                                  style: AppTextStyles.bodyMedium().copyWith(
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                    color: isSelected ? Colors.white : AppColors.textLightSecondary,
+                                    fontSize: 12,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            preset.id == 'classic'
+                                ? 'Raja, Mantri, Police, Chor'
+                                : 'Babu, Dewan, Police, Dakat',
+                            style: AppTextStyles.caption(color: Colors.white54)
+                                .copyWith(fontSize: 9.5),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 10),
+
+          // 3. Expandable Role & Scoring Customization
+          InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => setState(() => _showCustomSettings = !_showCustomSettings),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  Icon(
+                    PhosphorIcons.sliders(PhosphorIconsStyle.bold),
+                    size: 14,
+                    color: AppColors.accent,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Customize Names & Points',
+                    style: AppTextStyles.caption(color: AppColors.accent).copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    _showCustomSettings
+                        ? PhosphorIcons.caretUp(PhosphorIconsStyle.bold)
+                        : PhosphorIcons.caretDown(PhosphorIconsStyle.bold),
+                    size: 14,
+                    color: AppColors.accent,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          if (_showCustomSettings) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              child: Column(
+                children: activeRoles.map((role) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        RoleVectorIcon(role: role, size: 18, hasGlow: false),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 3,
+                          child: TextFormField(
+                            controller: _roleNameControllers[role],
+                            style: const TextStyle(fontSize: 12),
+                            decoration: InputDecoration(
+                              isDense: true,
+                              contentPadding:
+                                  const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                              labelText: role.shortName,
+                              labelStyle: TextStyle(fontSize: 10, color: role.color),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 2,
+                          child: TextFormField(
+                            controller: _rolePointControllers[role],
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(fontSize: 12),
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              contentPadding:
+                                  EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                              labelText: 'Points',
+                              labelStyle: TextStyle(fontSize: 10),
+                            ),
+                            validator: (val) {
+                              if (val == null || val.trim().isEmpty) return 'Required';
+                              final n = int.tryParse(val.trim());
+                              if (n == null || n < 0) return 'Invalid';
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+
           const SizedBox(height: 16),
+
           CustomButton(
             label: 'Create Room',
             leading: Icon(
@@ -498,9 +801,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             isLoading: state.isLoading,
             onPressed: () async {
               if (!_createFormKey.currentState!.validate()) return;
-              final room = await ref
-                  .read(homeViewModelProvider.notifier)
-                  .createRoom(_createNameController.text);
+
+              // Collect custom labels
+              final customLabels = <String, String>{};
+              for (final role in activeRoles) {
+                final txt = _roleNameControllers[role]?.text.trim();
+                if (txt != null && txt.isNotEmpty) {
+                  customLabels[role.name] = txt;
+                }
+              }
+
+              // Collect custom points
+              final customPoints = <String, int>{};
+              for (final role in activeRoles) {
+                final pt = int.tryParse(_rolePointControllers[role]?.text.trim() ?? '');
+                if (pt != null) {
+                  customPoints[role.name] = pt;
+                }
+              }
+
+              final room = await ref.read(homeViewModelProvider.notifier).createRoom(
+                    _createNameController.text,
+                    maxPlayers: _selectedPlayerCount,
+                    rolePreset: _selectedPreset.id,
+                    roleLabels: customLabels.isNotEmpty ? customLabels : null,
+                    rolePoints: customPoints.isNotEmpty ? customPoints : null,
+                  );
               if (room != null && mounted) {
                 context.push(AppRoutes.lobbyPath(room.roomCode));
               }

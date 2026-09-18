@@ -15,7 +15,13 @@ class RoomRepositoryImpl implements RoomRepository {
       : _supabaseService = supabaseService;
 
   @override
-  Future<RoomModel> createRoom({required String hostName}) async {
+  Future<RoomModel> createRoom({
+    required String hostName,
+    int maxPlayers = 4,
+    String rolePreset = 'classic',
+    Map<String, String>? roleLabels,
+    Map<String, int>? rolePoints,
+  }) async {
     final hostAuthId = await _supabaseService.getOrSignInAnonymousUserId();
     final now = DateTime.now();
 
@@ -52,12 +58,34 @@ class RoomRepositoryImpl implements RoomRepository {
         status: RoomStatus.waiting,
         currentRound: 0,
         maxRounds: AppConstants.defaultTotalRounds,
+        maxPlayers: maxPlayers,
+        rolePreset: rolePreset,
+        roleLabels: roleLabels,
+        rolePoints: rolePoints,
         createdAt: now,
       );
 
       try {
-        // 2. Insert room record
-        await _supabaseService.insert(AppConstants.roomsTable, room.toJson());
+        // 2. Insert room record (with fallback if DB migration not yet applied)
+        try {
+          await _supabaseService.insert(
+            AppConstants.roomsTable,
+            room.toJson(includeCustomColumns: true),
+          );
+        } catch (insertErr) {
+          final errStr = insertErr.toString().toLowerCase();
+          if (errStr.contains('column') ||
+              errStr.contains('pgrst204') ||
+              errStr.contains('42703')) {
+            // Fall back to standard columns
+            await _supabaseService.insert(
+              AppConstants.roomsTable,
+              room.toJson(includeCustomColumns: false),
+            );
+          } else {
+            rethrow;
+          }
+        }
 
         // 3. Insert host player record
         await _supabaseService.insert(AppConstants.playersTable, hostPlayer.toJson());
@@ -105,15 +133,15 @@ class RoomRepositoryImpl implements RoomRepository {
         throw const GameRuleFailure('Game in this room has already started.');
       }
 
-      // 2. Verify capacity (< 4 players)
+      // 2. Verify capacity (< maxPlayers)
       final existingPlayers = await _supabaseService.fetchList(
         AppConstants.playersTable,
         matchField: 'room_code',
         matchValue: cleanCode,
       );
 
-      if (existingPlayers.length >= AppConstants.maxPlayers) {
-        throw const RoomFullFailure('This room is full (maximum 4 players).');
+      if (existingPlayers.length >= room.maxPlayers) {
+        throw RoomFullFailure('This room is full (maximum ${room.maxPlayers} players).');
       }
 
       // 3. Get joining player's anonymous ID

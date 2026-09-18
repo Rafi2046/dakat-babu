@@ -4,7 +4,13 @@ import '../../data/models/room_model.dart';
 /// Abstract contract for room creation, player joining, and realtime lobby management.
 abstract interface class RoomRepository {
   /// Creates a new room with [hostName] as creator, returning the [RoomModel].
-  Future<RoomModel> createRoom({required String hostName});
+  Future<RoomModel> createRoom({
+    required String hostName,
+    int maxPlayers = 4,
+    String rolePreset = 'classic',
+    Map<String, String>? roleLabels,
+    Map<String, int>? rolePoints,
+  });
 
   /// Joins an existing room with [roomCode] using [playerName], returning the joined [PlayerModel].
   Future<PlayerModel> joinRoom({

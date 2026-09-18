@@ -13,6 +13,12 @@ class RoleBadge extends StatelessWidget {
   /// The game role to render.
   final GameRole role;
 
+  /// Optional custom label from role preset.
+  final String? customLabel;
+
+  /// Optional custom points override.
+  final int? customPoints;
+
   /// Whether to render a compact chip (for lists) or an expanded badge (for round results).
   final bool isCompact;
 
@@ -22,6 +28,8 @@ class RoleBadge extends StatelessWidget {
   const RoleBadge({
     super.key,
     required this.role,
+    this.customLabel,
+    this.customPoints,
     this.isCompact = false,
     this.showPoints = true,
   });
@@ -29,6 +37,8 @@ class RoleBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final roleColor = role.color;
+    final labelText = customLabel ?? (isCompact ? role.shortName : role.displayName);
+    final pointsVal = customPoints ?? role.points;
 
     if (isCompact) {
       return Container(
@@ -53,7 +63,7 @@ class RoleBadge extends StatelessWidget {
             RoleVectorIcon(role: role, size: 16, hasGlow: false),
             AppSpacing.gapHXs,
             Text(
-              role.shortName,
+              labelText,
               style: AppTextStyles.caption(color: roleColor).copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -87,7 +97,7 @@ class RoleBadge extends StatelessWidget {
           RoleVectorIcon(role: role, size: 26, hasGlow: true),
           AppSpacing.gapHMd,
           Text(
-            role.displayName,
+            labelText,
             style: AppTextStyles.bodyLarge(color: roleColor).copyWith(
               fontWeight: FontWeight.w800,
             ),
@@ -107,7 +117,7 @@ class RoleBadge extends StatelessWidget {
                 ],
               ),
               child: Text(
-                '+${role.points}',
+                '+$pointsVal',
                 style: AppTextStyles.caption(color: Colors.black).copyWith(
                   fontWeight: FontWeight.w900,
                 ),

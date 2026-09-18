@@ -38,7 +38,7 @@ class ResultsState {
 
   /// Whether a player dropped out mid-game.
   bool get isPlayerLeft =>
-      (players.length < AppConstants.maxPlayers && players.isNotEmpty) ||
+      (players.length < (room?.maxPlayers ?? AppConstants.defaultPlayers) && players.isNotEmpty) ||
       (room?.status == RoomStatus.playerLeft);
 
   /// The player who was the Chor in this round.
@@ -68,7 +68,7 @@ class ResultsState {
 
   /// Whether this match has concluded all configured rounds.
   bool get isMatchOver =>
-      (round?.roundNumber ?? 1) >= AppConstants.defaultTotalRounds;
+      (round?.roundNumber ?? 1) >= (room?.maxRounds ?? AppConstants.defaultTotalRounds);
 
   ResultsState copyWith({
     RoundModel? round,

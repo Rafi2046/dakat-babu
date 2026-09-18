@@ -132,6 +132,10 @@ class RoleShowcaseCard extends StatelessWidget {
         return 'Finds & catches thief';
       case GameRole.chor:
         return 'Escapes & steals points';
+      case GameRole.chintaykari:
+        return 'Swift snatcher in shadows';
+      case GameRole.batpar:
+        return 'Cunning swindler of the court';
     }
   }
 }

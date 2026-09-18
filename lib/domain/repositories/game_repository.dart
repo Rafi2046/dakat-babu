@@ -31,4 +31,7 @@ abstract interface class GameRepository {
 
   /// Streams realtime round changes for a given [roomCode].
   Stream<RoundModel?> watchCurrentRound(String roomCode);
+
+  /// Streams all rounds history for a given [roomCode].
+  Stream<List<RoundModel>> watchAllRounds(String roomCode);
 }

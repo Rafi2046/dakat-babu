@@ -199,17 +199,20 @@ class PassAndPlayViewModel extends StateNotifier<PassAndPlayState> {
     _assignRolesAndStartRound();
   }
 
-  /// Shuffles 4 roles and assigns 1 each to the 4 players for the new round.
+  /// Shuffles roles and assigns 1 each to the players for the new round.
   /// Guarantees that no player gets the exact same role as their previous round.
   void _assignRolesAndStartRound() {
     final prevRoles = state.players.map((p) => p.role).toList();
     final hasPrevRoles = prevRoles.every((r) => r != null);
+    final count = state.players.length;
 
     final allRoles = [
       GameRole.raja,
       GameRole.mantri,
       GameRole.police,
       GameRole.chor,
+      if (count >= 5) GameRole.chintaykari,
+      if (count >= 6) GameRole.batpar,
     ];
 
     List<GameRole> roles;
@@ -219,7 +222,7 @@ class PassAndPlayViewModel extends StateNotifier<PassAndPlayState> {
       attempts++;
     } while (hasPrevRoles &&
         attempts < 50 &&
-        List.generate(4, (i) => roles[i] == prevRoles[i]).any((same) => same));
+        List.generate(count, (i) => roles[i] == prevRoles[i]).any((same) => same));
 
     final updatedPlayers = <PassAndPlayPlayer>[];
     for (var i = 0; i < state.players.length; i++) {
@@ -264,7 +267,7 @@ class PassAndPlayViewModel extends StateNotifier<PassAndPlayState> {
         stage: PassAndPlayStage.passToPlayer,
       );
     } else {
-      // All 4 players have peeked! Hand phone to the Police
+      // All players have peeked! Hand phone to the Police
       state = state.copyWith(
         isCardRevealed: false,
         stage: PassAndPlayStage.handToPolice,
@@ -300,6 +303,12 @@ class PassAndPlayViewModel extends StateNotifier<PassAndPlayState> {
           roundScore = isCorrect
               ? AppConstants.chorCaughtPoints
               : AppConstants.chorSuccessPoints;
+          break;
+        case GameRole.chintaykari:
+          roundScore = AppConstants.chintaykariDefaultPoints;
+          break;
+        case GameRole.batpar:
+          roundScore = AppConstants.batparDefaultPoints;
           break;
         case null:
           roundScore = 0;

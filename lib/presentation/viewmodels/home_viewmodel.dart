@@ -55,11 +55,23 @@ class HomeViewModel extends StateNotifier<HomeState> {
         _roomCodeController = roomCodeController,
         super(const HomeState());
 
-  /// Creates a new room with the given host name.
-  Future<RoomModel?> createRoom(String hostName) async {
+  /// Creates a new room with the given host name and custom settings.
+  Future<RoomModel?> createRoom(
+    String hostName, {
+    int maxPlayers = 4,
+    String rolePreset = 'classic',
+    Map<String, String>? roleLabels,
+    Map<String, int>? rolePoints,
+  }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final room = await _createRoomUseCase(hostName: hostName);
+      final room = await _createRoomUseCase(
+        hostName: hostName,
+        maxPlayers: maxPlayers,
+        rolePreset: rolePreset,
+        roleLabels: roleLabels,
+        rolePoints: rolePoints,
+      );
       _playerIdController.state = room.hostId;
       _roomCodeController.state = room.roomCode;
       state = state.copyWith(isLoading: false, createdRoom: room);

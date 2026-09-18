@@ -13,6 +13,9 @@ abstract final class AppRoutes {
   /// Post-round and match results path with roomCode parameter.
   static const String results = '/results/:roomCode';
 
+  /// Dedicated live match scoreboard screen path with roomCode parameter.
+  static const String scoreboard = '/scoreboard/:roomCode';
+
   /// Pass & Play setup screen path.
   static const String passAndPlaySetup = '/pass-and-play-setup';
 
@@ -24,6 +27,7 @@ abstract final class AppRoutes {
   static const String lobbyName = 'lobby';
   static const String gameRoundName = 'gameRound';
   static const String resultsName = 'results';
+  static const String scoreboardName = 'scoreboard';
   static const String passAndPlaySetupName = 'passAndPlaySetup';
   static const String passAndPlayGameName = 'passAndPlayGame';
 
@@ -39,4 +43,7 @@ abstract final class AppRoutes {
 
   /// Generates the absolute path to round results.
   static String resultsPath(String roomCode) => '/results/$roomCode';
+
+  /// Generates the absolute path to live scoreboard.
+  static String scoreboardPath(String roomCode) => '/scoreboard/$roomCode';
 }

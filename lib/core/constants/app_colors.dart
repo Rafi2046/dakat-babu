@@ -72,6 +72,18 @@ abstract final class AppColors {
   /// Chor role background tint for badges and highlights.
   static const Color chorContainer = Color(0x33E63946);
 
+  /// Chintaykari (Snatcher) - Amber Orange.
+  static const Color chintaykari = Color(0xFFFB8500);
+
+  /// Chintaykari role background tint.
+  static const Color chintaykariContainer = Color(0x33FB8500);
+
+  /// Batpar (Swindler) - Emerald Teal.
+  static const Color batpar = Color(0xFF00A896);
+
+  /// Batpar role background tint.
+  static const Color batparContainer = Color(0x3300A896);
+
   // --- Feedback & State Colors ---
   /// Positive success green.
   static const Color success = Color(0xFF06D6A0);
@@ -116,6 +128,12 @@ abstract final class AppColors {
 
   /// Chor ambient crimson glow.
   static const Color chorGlow = Color(0x66E63946);
+
+  /// Chintaykari ambient orange glow.
+  static const Color chintaykariGlow = Color(0x66FB8500);
+
+  /// Batpar ambient teal glow.
+  static const Color batparGlow = Color(0x6600A896);
 
   /// Brand primary ambient glow.
   static const Color primaryGlow = Color(0x556C5CE7);
@@ -190,6 +208,28 @@ abstract final class AppColors {
       Color(0xFFFF5D73),
       Color(0xFFE63946),
       Color(0xFF9E0012),
+    ],
+  );
+
+  /// Amber-orange gradient for Chintaykari.
+  static const LinearGradient chintaykariGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFFFFB703),
+      Color(0xFFFB8500),
+      Color(0xFFD9480F),
+    ],
+  );
+
+  /// Emerald teal gradient for Batpar.
+  static const LinearGradient batparGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF02C39A),
+      Color(0xFF00A896),
+      Color(0xFF028090),
     ],
   );
 

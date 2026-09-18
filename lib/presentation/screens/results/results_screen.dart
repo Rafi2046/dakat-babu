@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +12,7 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../../core/services/sound_service.dart';
 import '../../../core/utils/extensions.dart';
 import '../../../data/models/player_model.dart';
 import '../../../data/models/room_model.dart';
@@ -33,6 +35,35 @@ class ResultsScreen extends ConsumerStatefulWidget {
 }
 
 class _ResultsScreenState extends ConsumerState<ResultsScreen> {
+  late final ConfettiController _confettiController;
+
+  @override
+  void initState() {
+    super.initState();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
+
+    // Play dramatic suspense sting right before unmasking, followed by success chime or failure buzz
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(soundServiceProvider).playSting();
+      Future.delayed(const Duration(milliseconds: 750), () {
+        if (!mounted) return;
+        final state = ref.read(resultsViewModelProvider(widget.roomCode));
+        if (state.round?.isGuessCorrect ?? false) {
+          _confettiController.play();
+          ref.read(soundServiceProvider).playSuccess();
+        } else {
+          ref.read(soundServiceProvider).playFailure();
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUserId = ref.watch(currentPlayerIdProvider) ??
@@ -91,9 +122,41 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
           tooltip: 'Leave Match',
           onPressed: () => _handleLeave(context, isHost, currentUserId),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              PhosphorIcons.trophy(PhosphorIconsStyle.fill),
+              color: AppColors.accent,
+              size: 20,
+            ),
+            tooltip: 'Scoreboard',
+            onPressed: () => context.push(AppRoutes.scoreboardPath(widget.roomCode)),
+          ),
+        ],
       ),
       body: Stack(
         children: [
+          // Confetti celebration burst
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirectionality: BlastDirectionality.explosive,
+              emissionFrequency: 0.05,
+              numberOfParticles: 30,
+              maxBlastForce: 28,
+              minBlastForce: 10,
+              gravity: 0.25,
+              colors: const [
+                AppColors.raja,
+                AppColors.police,
+                AppColors.secondary,
+                AppColors.success,
+                Colors.pinkAccent,
+                Colors.amber,
+              ],
+            ),
+          ),
           AnimatedLivingBackground(
             child: SafeArea(
               child: SingleChildScrollView(
@@ -153,7 +216,21 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                     // --- 3. Match Leaderboard Standings ---
                     _buildLeaderboardSection(resultsState.leaderboard),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 12),
+
+                    // Dedicated Scoreboard Screen button
+                    CustomButton(
+                      label: 'View Detailed Scoreboard & History',
+                      variant: ButtonVariant.outlined,
+                      leading: Icon(
+                        PhosphorIcons.chartBar(PhosphorIconsStyle.bold),
+                        color: AppColors.accent,
+                        size: 18,
+                      ),
+                      onPressed: () => context.push(AppRoutes.scoreboardPath(widget.roomCode)),
+                    ),
+
+                    const SizedBox(height: 16),
 
                     // --- 4. Continuation Controls ---
                     if (isHost && !resultsState.isMatchOver)
@@ -241,7 +318,8 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
         // Unmasked players list
         ...state.players.map((player) {
           final role = player.role;
-          final roundPoints = _calculateRoundPoints(player, state.round);
+          final roundPoints = _calculateRoundPoints(player, state.round, state.room);
+          final customLabel = role != null ? state.room?.getLabelForRole(role) : null;
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -305,7 +383,12 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                   ),
 
                   if (role != null) ...[
-                    RoleBadge(role: role, isCompact: true),
+                    RoleBadge(
+                      role: role,
+                      customLabel: customLabel,
+                      customPoints: roundPoints,
+                      isCompact: true,
+                    ),
                     const SizedBox(width: 8),
                   ],
 
@@ -581,20 +664,29 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
     }
   }
 
-  int _calculateRoundPoints(PlayerModel player, RoundModel? round) {
+  int _calculateRoundPoints(PlayerModel player, RoundModel? round, RoomModel? room) {
     if (round == null) return 0;
-    if (player.id == round.rajaPlayerId) return AppConstants.rajaPoints;
-    if (player.id == round.mantriPlayerId) return AppConstants.mantriPoints;
-    if (player.id == round.policePlayerId) {
-      return (round.isGuessCorrect ?? false)
-          ? AppConstants.policeCorrectPoints
-          : AppConstants.policeWrongPoints;
-    }
-    if (player.id == round.chorPlayerId) {
-      return (round.isGuessCorrect ?? false)
-          ? AppConstants.chorCaughtPoints
-          : AppConstants.chorSuccessPoints;
-    }
+    final isCorrect = round.isGuessCorrect ?? false;
+
+    final rajaPts = room?.getPointsForRole(GameRole.raja) ?? AppConstants.rajaPoints;
+    final mantriPts = room?.getPointsForRole(GameRole.mantri) ?? AppConstants.mantriPoints;
+    final policePts = isCorrect
+        ? (room?.getPointsForRole(GameRole.police) ?? AppConstants.policeCorrectPoints)
+        : AppConstants.policeWrongPoints;
+    final chorPts = isCorrect
+        ? AppConstants.chorCaughtPoints
+        : (room?.getPointsForRole(GameRole.chor) ?? AppConstants.chorSuccessPoints);
+    final chintaykariPts =
+        room?.getPointsForRole(GameRole.chintaykari) ?? AppConstants.chintaykariDefaultPoints;
+    final batparPts =
+        room?.getPointsForRole(GameRole.batpar) ?? AppConstants.batparDefaultPoints;
+
+    if (player.id == round.rajaPlayerId) return rajaPts;
+    if (player.id == round.mantriPlayerId) return mantriPts;
+    if (player.id == round.policePlayerId) return policePts;
+    if (player.id == round.chorPlayerId) return chorPts;
+    if (player.id == round.chintaykariPlayerId) return chintaykariPts;
+    if (player.id == round.batparPlayerId) return batparPts;
     return 0;
   }
 }

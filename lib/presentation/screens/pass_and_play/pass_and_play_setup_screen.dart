@@ -29,12 +29,13 @@ class _PassAndPlaySetupScreenState
 
   late final List<TextEditingController> _nameControllers;
   int _selectedRounds = 5;
+  int _playerCount = 4;
 
   @override
   void initState() {
     super.initState();
     _nameControllers = List.generate(
-      4,
+      6,
       (i) => TextEditingController(text: 'Player ${i + 1}'),
     );
   }
@@ -50,7 +51,10 @@ class _PassAndPlaySetupScreenState
   void _onStartMatch() {
     if (!_formKey.currentState!.validate()) return;
 
-    final names = _nameControllers.map((c) => c.text.trim()).toList();
+    final names = _nameControllers
+        .take(_playerCount)
+        .map((c) => c.text.trim())
+        .toList();
 
     ref.read(passAndPlayViewModelProvider.notifier).initMatch(
           playerNames: names,
@@ -131,7 +135,92 @@ class _PassAndPlaySetupScreenState
 
                   const SizedBox(height: 18),
 
-                  // 4 Player Names Card
+                  // Player Count Selector
+                  GameCard(
+                    isGlass: true,
+                    borderColor: Colors.white.withValues(alpha: 0.1),
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              PhosphorIcons.users(PhosphorIconsStyle.fill),
+                              color: AppColors.accent,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'খেলোয়াড়ের সংখ্যা (Player Count)',
+                              style: AppTextStyles.heading3().copyWith(fontSize: 16),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [4, 5, 6].map((count) {
+                            final isSelected = _playerCount == count;
+                            return Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                child: GestureDetector(
+                                  onTap: () => setState(() => _playerCount = count),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? AppColors.primary.withValues(alpha: 0.25)
+                                          : Colors.white.withValues(alpha: 0.05),
+                                      borderRadius: BorderRadius.circular(AppRadius.md),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? AppColors.primary
+                                            : Colors.white.withValues(alpha: 0.1),
+                                        width: isSelected ? 1.5 : 1.0,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          '$count Players',
+                                          style: AppTextStyles.bodyMedium(
+                                            color: isSelected
+                                                ? AppColors.primaryLight
+                                                : AppColors.textLightSecondary,
+                                          ).copyWith(
+                                            fontWeight: isSelected
+                                                ? FontWeight.bold
+                                                : FontWeight.normal,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          count == 4
+                                              ? 'Classic 4'
+                                              : (count == 5 ? '+ Chintaykari' : '+ Batpar'),
+                                          style: AppTextStyles.caption(
+                                            color: isSelected
+                                                ? AppColors.primaryLight.withValues(alpha: 0.8)
+                                                : AppColors.textLightSecondary.withValues(alpha: 0.6),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  // Player Names Card
                   GameCard(
                     isGlass: true,
                     borderColor: Colors.white.withValues(alpha: 0.1),
@@ -148,14 +237,14 @@ class _PassAndPlaySetupScreenState
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '৪ জন খেলোয়াড়ের নাম',
+                              '$_playerCount জন খেলোয়াড়ের নাম',
                               style: AppTextStyles.heading3().copyWith(fontSize: 16),
                             ),
                           ],
                         ),
                         const SizedBox(height: 14),
 
-                        ...List.generate(4, (index) {
+                        ...List.generate(_playerCount, (index) {
                           final playerNumber = index + 1;
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 12),

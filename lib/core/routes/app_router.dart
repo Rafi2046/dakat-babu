@@ -8,6 +8,7 @@ import '../../presentation/screens/lobby/lobby_screen.dart';
 import '../../presentation/screens/pass_and_play/pass_and_play_game_screen.dart';
 import '../../presentation/screens/pass_and_play/pass_and_play_setup_screen.dart';
 import '../../presentation/screens/results/results_screen.dart';
+import '../../presentation/screens/scoreboard/scoreboard_screen.dart';
 import '../constants/app_text_styles.dart';
 import 'app_routes.dart';
 
@@ -53,6 +54,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final roomCode = state.pathParameters[AppRoutes.paramRoomCode] ?? '';
           return ResultsScreen(roomCode: roomCode);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.scoreboard,
+        name: AppRoutes.scoreboardName,
+        builder: (context, state) {
+          final roomCode = state.pathParameters[AppRoutes.paramRoomCode] ?? '';
+          return ScoreboardScreen(roomCode: roomCode);
         },
       ),
     ],

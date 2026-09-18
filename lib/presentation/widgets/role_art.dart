@@ -33,6 +33,12 @@ class RoleVectorIcon extends StatelessWidget {
       case GameRole.chor:
         glowColor = AppColors.chorGlow;
         break;
+      case GameRole.chintaykari:
+        glowColor = AppColors.chintaykariGlow;
+        break;
+      case GameRole.batpar:
+        glowColor = AppColors.batparGlow;
+        break;
     }
 
     return Container(
@@ -66,6 +72,8 @@ class RoleVectorIcon extends StatelessWidget {
       case GameRole.police:
         return const _PoliceShieldPainter();
       case GameRole.chor:
+      case GameRole.chintaykari:
+      case GameRole.batpar:
         return const _ChorMaskPainter();
     }
   }
@@ -377,6 +385,8 @@ class RolePatternPainter extends CustomPainter {
         _drawPoliceSecurityGrid(canvas, size);
         break;
       case GameRole.chor:
+      case GameRole.chintaykari:
+      case GameRole.batpar:
         _drawStealthCrosshatch(canvas, size);
         break;
     }

@@ -48,7 +48,7 @@ class GameRoundState {
 
   /// Whether a player has dropped or left the active match.
   bool get isPlayerLeft =>
-      (players.length < AppConstants.maxPlayers && players.isNotEmpty) ||
+      (players.length < (room?.maxPlayers ?? AppConstants.defaultPlayers) && players.isNotEmpty) ||
       (room?.status == RoomStatus.playerLeft);
 
   /// The player assigned to the Raja role.
