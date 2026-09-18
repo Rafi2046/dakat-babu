@@ -13,11 +13,19 @@ abstract final class AppRoutes {
   /// Post-round and match results path with roomCode parameter.
   static const String results = '/results/:roomCode';
 
+  /// Pass & Play setup screen path.
+  static const String passAndPlaySetup = '/pass-and-play-setup';
+
+  /// Pass & Play live game screen path.
+  static const String passAndPlayGame = '/pass-and-play';
+
   // --- Route Names ---
   static const String homeName = 'home';
   static const String lobbyName = 'lobby';
   static const String gameRoundName = 'gameRound';
   static const String resultsName = 'results';
+  static const String passAndPlaySetupName = 'passAndPlaySetup';
+  static const String passAndPlayGameName = 'passAndPlayGame';
 
   // --- Parameter Keys ---
   static const String paramRoomCode = 'roomCode';

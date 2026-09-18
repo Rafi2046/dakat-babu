@@ -52,9 +52,11 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen> {
         context.go(AppRoutes.lobbyPath(widget.roomCode));
         return;
       }
+      final prevCompleted = prev?.round?.status == RoundStatus.completed ||
+          prev?.round?.policeGuessPlayerId != null;
       final isCompleted = current.round?.status == RoundStatus.completed ||
           current.round?.policeGuessPlayerId != null;
-      if (isCompleted) {
+      if (isCompleted && !prevCompleted) {
         context.go(AppRoutes.resultsPath(widget.roomCode));
       }
       if (current.errorMessage != null &&

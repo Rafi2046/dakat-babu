@@ -50,13 +50,17 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
         context.go(AppRoutes.lobbyPath(widget.roomCode));
         return;
       }
-      final prevRoundNumber = prev?.round?.roundNumber ?? 0;
-      final currentRoundNumber = current.round?.roundNumber ?? 0;
-      final isNewRound = currentRoundNumber > prevRoundNumber;
-      final isRoleReveal = current.round?.status == RoundStatus.roleReveal &&
-          prev?.round?.status == RoundStatus.completed;
+      // Only navigate to GameRound if a NEW active round has actually started.
+      // Must NOT navigate if the round is completed (which is what this screen displays).
+      final isNewActiveRound = current.round != null &&
+          current.round!.status != RoundStatus.completed;
+      final wasCompletedOrNew = prev?.round == null
+          ? (current.round?.status == RoundStatus.roleReveal)
+          : (prev!.round?.status == RoundStatus.completed ||
+              (current.round != null &&
+                  current.round!.roundNumber > prev.round!.roundNumber));
 
-      if (isNewRound || isRoleReveal) {
+      if (isNewActiveRound && wasCompletedOrNew) {
         context.go(AppRoutes.gameRoundPath(widget.roomCode));
       }
       if (current.errorMessage != null &&

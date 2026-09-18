@@ -5,6 +5,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/app_radius.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/routes/app_routes.dart';
@@ -78,7 +79,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 // --- 1. Refined Hero Header ---
                 _buildHeroHeader(),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
+
+                // --- 1.5 Pass & Play Single Phone Banner ---
+                _buildPassAndPlayBanner(),
+
+                const SizedBox(height: 18),
+
+                // Online Multiplayer divider title
+                Row(
+                  children: [
+                    const Expanded(child: Divider(color: Colors.white12)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(
+                        'অথবা অনলাইন রুম (MULTI-DEVICE)',
+                        style: AppTextStyles.caption(color: Colors.white54)
+                            .copyWith(letterSpacing: 1.2, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const Expanded(child: Divider(color: Colors.white12)),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
 
                 // --- 2. Sleek Segmented Tab Switcher ---
                 _buildSlidingTabSwitcher(),
@@ -195,6 +219,99 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  /// Dedicated Pass & Play Quick Match Banner for single-phone party play.
+  Widget _buildPassAndPlayBanner() {
+    return InkWell(
+      onTap: () => context.go(AppRoutes.passAndPlaySetup),
+      borderRadius: AppRadius.cardRadius,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primary.withValues(alpha: 0.38),
+              AppColors.secondary.withValues(alpha: 0.22),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: AppRadius.cardRadius,
+          border: Border.all(
+            color: AppColors.primaryLight.withValues(alpha: 0.5),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.25),
+              blurRadius: 18,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [AppColors.primary, AppColors.secondary],
+                ),
+              ),
+              child: Icon(
+                PhosphorIcons.deviceMobileSpeaker(PhosphorIconsStyle.fill),
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Pass & Play (১ ফোনে ৪ জন)',
+                        style: AppTextStyles.heading3().copyWith(fontSize: 15),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.accent.withValues(alpha: 0.25),
+                          borderRadius: AppRadius.pillRadius,
+                          border: Border.all(color: AppColors.accent, width: 0.8),
+                        ),
+                        child: Text(
+                          'OFFLINE',
+                          style: AppTextStyles.caption(color: AppColors.accent)
+                              .copyWith(fontSize: 9, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'কোনো ইন্টারনেট দরকার নেই! এক ফোন হাতবদল করে ৪ বন্ধু একসাথে খেলুন।',
+                    style: AppTextStyles.caption(color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              PhosphorIcons.arrowRight(PhosphorIconsStyle.bold),
+              color: AppColors.primaryLight,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -38,7 +38,11 @@ dependencies:
   google_fonts: ^8.2.1
   flutter_riverpod: ^2.6.1
   go_router: ^17.5.0
-  phosphor_flutter: ^2.1.0
+  # Using git commit until phosphor_flutter publishes 2.1.1+ for Flutter 3.44+ final IconData compatibility
+  phosphor_flutter:
+    git:
+      url: https://github.com/MahMoos/flutter.git
+      ref: agent/icondata-final-compat
 
 dev_dependencies:
   flutter_test:

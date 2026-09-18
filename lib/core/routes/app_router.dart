@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../presentation/screens/game_round/game_round_screen.dart';
 import '../../presentation/screens/home/home_screen.dart';
 import '../../presentation/screens/lobby/lobby_screen.dart';
+import '../../presentation/screens/pass_and_play/pass_and_play_game_screen.dart';
+import '../../presentation/screens/pass_and_play/pass_and_play_setup_screen.dart';
 import '../../presentation/screens/results/results_screen.dart';
 import '../constants/app_text_styles.dart';
 import 'app_routes.dart';
@@ -18,6 +20,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.home,
         name: AppRoutes.homeName,
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.passAndPlaySetup,
+        name: AppRoutes.passAndPlaySetupName,
+        builder: (context, state) => const PassAndPlaySetupScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.passAndPlayGame,
+        name: AppRoutes.passAndPlayGameName,
+        builder: (context, state) => const PassAndPlayGameScreen(),
       ),
       GoRoute(
         path: AppRoutes.lobby,
