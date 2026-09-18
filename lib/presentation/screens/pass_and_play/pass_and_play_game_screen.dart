@@ -281,6 +281,7 @@ class _PassAndPlayGameScreenState
 
           // 3D Flip Role Card
           FlipRoleCard(
+            key: ValueKey('flip_card_${currentPlayer?.id}_round_${state.currentRound}'),
             role: currentPlayer?.role,
             isRevealed: isRevealed,
             onToggle: notifier.toggleCardReveal,

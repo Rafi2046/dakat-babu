@@ -128,5 +128,28 @@ void main() {
       expect(updatedPolice.roundScore, equals(0));
       expect(updatedChor.roundScore, equals(500));
     });
+
+    test('Anti-repeat Shuffling: No player gets the same role in consecutive rounds', () {
+      final names = ['Rafi', 'Sakib', 'Tanvir', 'Rahul'];
+      viewModel.initMatch(playerNames: names, totalRounds: 5);
+
+      for (var round = 1; round < 5; round++) {
+        final round1Roles = {for (final p in viewModel.state.players) p.id: p.role};
+
+        // Advance round
+        viewModel.nextRound();
+
+        final round2Roles = {for (final p in viewModel.state.players) p.id: p.role};
+
+        // Ensure every single player got a DIFFERENT role than the previous round!
+        for (final p in viewModel.state.players) {
+          expect(
+            round2Roles[p.id],
+            isNot(equals(round1Roles[p.id])),
+            reason: 'Player ${p.name} should not get the same role in consecutive rounds',
+          );
+        }
+      }
+    });
   });
 }

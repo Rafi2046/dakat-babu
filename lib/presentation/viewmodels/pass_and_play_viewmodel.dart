@@ -171,7 +171,7 @@ class PassAndPlayViewModel extends StateNotifier<PassAndPlayState> {
   final Random _random;
 
   PassAndPlayViewModel({Random? random})
-      : _random = random ?? Random(),
+      : _random = random ?? Random.secure(),
         super(const PassAndPlayState());
 
   /// Initializes a new match with player names and total rounds.
@@ -200,13 +200,26 @@ class PassAndPlayViewModel extends StateNotifier<PassAndPlayState> {
   }
 
   /// Shuffles 4 roles and assigns 1 each to the 4 players for the new round.
+  /// Guarantees that no player gets the exact same role as their previous round.
   void _assignRolesAndStartRound() {
-    final roles = [
+    final prevRoles = state.players.map((p) => p.role).toList();
+    final hasPrevRoles = prevRoles.every((r) => r != null);
+
+    final allRoles = [
       GameRole.raja,
       GameRole.mantri,
       GameRole.police,
       GameRole.chor,
-    ]..shuffle(_random);
+    ];
+
+    List<GameRole> roles;
+    int attempts = 0;
+    do {
+      roles = List<GameRole>.from(allRoles)..shuffle(_random);
+      attempts++;
+    } while (hasPrevRoles &&
+        attempts < 50 &&
+        List.generate(4, (i) => roles[i] == prevRoles[i]).any((same) => same));
 
     final updatedPlayers = <PassAndPlayPlayer>[];
     for (var i = 0; i < state.players.length; i++) {
