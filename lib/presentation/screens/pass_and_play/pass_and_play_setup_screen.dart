@@ -151,9 +151,13 @@ class _PassAndPlaySetupScreenState
                               size: 20,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              'খেলোয়াড়ের সংখ্যা (Player Count)',
-                              style: AppTextStyles.heading3().copyWith(fontSize: 16),
+                            Expanded(
+                              child: Text(
+                                'খেলোয়াড়ের সংখ্যা (Player Count)',
+                                style: AppTextStyles.heading3().copyWith(fontSize: 15),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),
@@ -163,12 +167,15 @@ class _PassAndPlaySetupScreenState
                             final isSelected = _playerCount == count;
                             return Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 3),
                                 child: GestureDetector(
                                   onTap: () => setState(() => _playerCount = count),
                                   child: AnimatedContainer(
                                     duration: const Duration(milliseconds: 200),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10,
+                                      horizontal: 4,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: isSelected
                                           ? AppColors.primary.withValues(alpha: 0.25)
@@ -182,28 +189,41 @@ class _PassAndPlaySetupScreenState
                                       ),
                                     ),
                                     child: Column(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text(
-                                          '$count Players',
-                                          style: AppTextStyles.bodyMedium(
-                                            color: isSelected
-                                                ? AppColors.primaryLight
-                                                : AppColors.textLightSecondary,
-                                          ).copyWith(
-                                            fontWeight: isSelected
-                                                ? FontWeight.bold
-                                                : FontWeight.normal,
+                                        FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            '$count Players',
+                                            style: AppTextStyles.bodyMedium(
+                                              color: isSelected
+                                                  ? AppColors.primaryLight
+                                                  : AppColors.textLightSecondary,
+                                            ).copyWith(
+                                              fontWeight: isSelected
+                                                  ? FontWeight.bold
+                                                  : FontWeight.w500,
+                                              fontSize: 12.5,
+                                            ),
                                           ),
                                         ),
                                         const SizedBox(height: 2),
-                                        Text(
-                                          count == 4
-                                              ? 'Classic 4'
-                                              : (count == 5 ? '+ Chintaykari' : '+ Batpar'),
-                                          style: AppTextStyles.caption(
-                                            color: isSelected
-                                                ? AppColors.primaryLight.withValues(alpha: 0.8)
-                                                : AppColors.textLightSecondary.withValues(alpha: 0.6),
+                                        FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            count == 4
+                                                ? 'Classic'
+                                                : (count == 5 ? '+Chintaykari' : '+Batpar'),
+                                            style: AppTextStyles.caption(
+                                              color: isSelected
+                                                  ? (count == 5
+                                                      ? AppColors.chintaykari
+                                                      : (count == 6
+                                                          ? AppColors.batpar
+                                                          : AppColors.primaryLight))
+                                                  : AppColors.textLightSecondary
+                                                      .withValues(alpha: 0.6),
+                                            ).copyWith(fontSize: 10),
                                           ),
                                         ),
                                       ],
@@ -236,9 +256,13 @@ class _PassAndPlaySetupScreenState
                               size: 20,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              '$_playerCount জন খেলোয়াড়ের নাম',
-                              style: AppTextStyles.heading3().copyWith(fontSize: 16),
+                            Expanded(
+                              child: Text(
+                                '$_playerCount জন খেলোয়াড়ের নাম',
+                                style: AppTextStyles.heading3().copyWith(fontSize: 15),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),
@@ -332,9 +356,13 @@ class _PassAndPlaySetupScreenState
                               size: 18,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              'মোট রাউন্ড সংখ্যা',
-                              style: AppTextStyles.heading3().copyWith(fontSize: 15),
+                            Expanded(
+                              child: Text(
+                                'মোট রাউন্ড সংখ্যা (Rounds)',
+                                style: AppTextStyles.heading3().copyWith(fontSize: 15),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),

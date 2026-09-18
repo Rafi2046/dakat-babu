@@ -127,9 +127,13 @@ class ScoreboardScreen extends ConsumerWidget {
                       size: 20,
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      'Live Scoreboard',
-                      style: AppTextStyles.heading3(),
+                    Flexible(
+                      child: Text(
+                        'Live Scoreboard',
+                        style: AppTextStyles.heading3(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),

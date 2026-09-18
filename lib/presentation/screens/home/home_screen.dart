@@ -313,9 +313,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        'Pass & Play (১ ফোনে ৪ জন)',
-                        style: AppTextStyles.heading3().copyWith(fontSize: 15),
+                      Flexible(
+                        child: Text(
+                          'Pass & Play (১ ফোনে ৪-৬ জন)',
+                          style: AppTextStyles.heading3().copyWith(fontSize: 14.5),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       const SizedBox(width: 6),
                       Container(
@@ -335,8 +339,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'কোনো ইন্টারনেট দরকার নেই! এক ফোন হাতবদল করে ৪ বন্ধু একসাথে খেলুন।',
+                    'কোনো ইন্টারনেট দরকার নেই! এক ফোন হাতবদল করে ৪-৬ বন্ধু একসাথে খেলুন।',
                     style: AppTextStyles.caption(color: Colors.white70),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -708,14 +714,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     color: AppColors.accent,
                   ),
                   const SizedBox(width: 6),
-                  Text(
-                    'Customize Names & Points',
-                    style: AppTextStyles.caption(color: AppColors.accent).copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11.5,
+                  Expanded(
+                    child: Text(
+                      'Customize Names & Points',
+                      style: AppTextStyles.caption(color: AppColors.accent).copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11.5,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 6),
                   Icon(
                     _showCustomSettings
                         ? PhosphorIcons.caretUp(PhosphorIconsStyle.bold)
