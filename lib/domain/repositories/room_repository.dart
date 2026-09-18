@@ -25,10 +25,7 @@ abstract interface class RoomRepository {
   });
 
   /// Removes a player from the room or disbands it if host leaves.
-  Future<void> leaveRoom({
-    required String playerId,
-    required String roomCode,
-  });
+  Future<void> leaveRoom({required String playerId, required String roomCode});
 
   /// Retrieves a room by its alphanumeric [roomCode].
   Future<RoomModel?> getRoom(String roomCode);
