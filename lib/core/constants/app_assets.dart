@@ -7,13 +7,46 @@ abstract final class AppAssets {
 
   // --- Brand Images & Illustrations ---
   /// Main DakatBabu game logo.
-  static const String logo = '$_imagesBase/dakat_babu_logo.png';
+  static const String logo = '$_imagesBase/brand/logo_chor_police_dakat_babu.png';
 
   /// Splash screen brand mark.
   static const String splashLogo = '$_imagesBase/dakat_babu_splash.png';
 
+  /// App store / launcher style icon art.
+  static const String appIcon = '$_imagesBase/brand/app_icon.png';
+
+  /// Standing hero — Police.
+  static const String policeStanding =
+      '$_imagesBase/characters/police/standing.png';
+
+  /// Standing hero — Chor.
+  static const String chorStanding = '$_imagesBase/characters/chor/standing.png';
+
+  /// Standing hero — Dakat.
+  static const String dakatStanding =
+      '$_imagesBase/characters/dakat/standing.png';
+
+  /// Standing hero — Babu.
+  static const String babuStanding = '$_imagesBase/characters/babu/standing.png';
+
+  /// Role card — Police.
+  static const String roleCardPolice = '$_imagesBase/role_cards/police.png';
+
+  /// Role card — Chor.
+  static const String roleCardChor = '$_imagesBase/role_cards/chor.png';
+
+  /// Role card — Dakat.
+  static const String roleCardDakat = '$_imagesBase/role_cards/dakat.png';
+
+  /// Role card — Babu.
+  static const String roleCardBabu = '$_imagesBase/role_cards/babu.png';
+
   /// Background decorative party ornament pattern.
   static const String patternBackground = '$_imagesBase/bg_pattern.png';
+
+  /// Dhaka city street backdrop.
+  static const String bgDhakaCityStreet =
+      '$_imagesBase/backgrounds/dhaka_city_street.png';
 
   /// Crown illustration for Raja role.
   static const String rajaCrown = '$_imagesBase/roles/raja_crown.png';
