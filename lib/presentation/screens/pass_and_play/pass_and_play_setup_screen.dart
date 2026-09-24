@@ -38,6 +38,17 @@ class _PassAndPlaySetupScreenState
       _playerCount,
       (i) => TextEditingController(text: 'Player ${i + 1}'),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final extra = GoRouterState.of(context).extra;
+      if (extra is Map && extra['botMode'] == true) {
+        final human = (extra['humanName'] as String?) ?? 'You';
+        _nameControllers[0].text = human;
+        _nameControllers[1].text = 'Bot Rafi';
+        _nameControllers[2].text = 'Bot Sami';
+        _nameControllers[3].text = 'Bot Tanvir';
+        setState(() {});
+      }
+    });
   }
 
   @override

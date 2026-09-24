@@ -156,9 +156,30 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                   ),
                 ),
 
-                AppSpacing.gapVLg,
+                AppSpacing.gapVMd,
+                // QR join code
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: QrImageView(
+                      data: AppConstants.joinDeepLink(widget.roomCode),
+                      size: 140,
+                      backgroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+                AppSpacing.gapVSm,
+                Text(
+                  'Scan to join · ${AppConstants.joinDeepLink(widget.roomCode)}',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.caption(),
+                ),
 
-                // --- Player Count Header ---
+                AppSpacing.gapVLg,
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [

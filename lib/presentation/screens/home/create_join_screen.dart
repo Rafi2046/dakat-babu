@@ -78,7 +78,9 @@ class _CreateJoinScreenState extends ConsumerState<CreateJoinScreen>
   }
 
   void _onQrDetect(BarcodeCapture capture) {
-    final raw = capture.barcodes.firstOrNull?.rawValue;
+    final raw = capture.barcodes.isEmpty
+        ? null
+        : capture.barcodes.first.rawValue;
     if (raw == null) return;
     final match = RegExp(r'join/([A-Z0-9]+)', caseSensitive: false)
         .firstMatch(raw);
