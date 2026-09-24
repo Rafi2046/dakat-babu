@@ -3,9 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
-import '../../widgets/animated_living_background.dart';
+import '../../widgets/cpdb/cpdb.dart';
 
-/// Six-step how-to-play tutorial.
 class HowToPlayScreen extends StatelessWidget {
   const HowToPlayScreen({super.key});
 
@@ -20,34 +19,26 @@ class HowToPlayScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: AnimatedLivingBackground(
-        child: SafeArea(
-          child: ListView(
-            padding: AppSpacing.screenPadding,
-            children: [
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  ),
-                  Text('How to Play', style: AppTextStyles.heading2()),
-                ],
+    return AppShell(
+      padding: EdgeInsets.zero,
+      topBar: TopBar(
+        title: 'How to Play',
+        onBack: () => context.pop(),
+        showProfile: false,
+      ),
+      body: ListView(
+        padding: AppSpacing.screenPadding,
+        children: [
+          for (final step in _steps)
+            Card(
+              color: Colors.white10,
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                title: Text(step.$1, style: AppTextStyles.heading3()),
+                subtitle: Text(step.$2, style: AppTextStyles.bodyMedium()),
               ),
-              AppSpacing.gapVLg,
-              for (final step in _steps)
-                Card(
-                  color: Colors.white10,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    title: Text(step.$1, style: AppTextStyles.heading3()),
-                    subtitle: Text(step.$2, style: AppTextStyles.bodyMedium()),
-                  ),
-                ),
-            ],
-          ),
-        ),
+            ),
+        ],
       ),
     );
   }

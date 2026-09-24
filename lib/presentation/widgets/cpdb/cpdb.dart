@@ -1,6 +1,7 @@
 /// CPDB shared UI component library — build once, use everywhere.
 library;
 
+export 'game_card_placeholder.dart';
 export 'game_room_layout.dart';
 export 'app_shell.dart';
 export 'badge_card.dart';

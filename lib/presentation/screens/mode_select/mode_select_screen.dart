@@ -5,8 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/routes/app_routes.dart';
-import '../../widgets/animated_living_background.dart';
-import '../../widgets/custom_button.dart';
+import '../../widgets/cpdb/cpdb.dart';
 
 /// Four game-mode cards.
 class ModeSelectScreen extends StatelessWidget {
@@ -14,58 +13,41 @@ class ModeSelectScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: AnimatedLivingBackground(
-        child: SafeArea(
-          child: Padding(
-            padding: AppSpacing.screenPadding,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => context.pop(),
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    ),
-                    Text('Select Mode', style: AppTextStyles.heading2()),
-                  ],
-                ),
-                AppSpacing.gapVLg,
-                Expanded(
-                  child: ListView(
-                    children: [
-                      _ModeCard(
-                        title: 'HOTSPOT MULTIPLAYER',
-                        subtitle: 'Same Wi-Fi / Hotspot',
-                        color: AppColors.primary,
-                        onTap: () => context.push(AppRoutes.createJoin),
-                      ),
-                      _ModeCard(
-                        title: 'ONLINE MULTIPLAYER',
-                        subtitle: 'Play with friends anywhere',
-                        color: const Color(0xFF00A896),
-                        onTap: () => context.push(AppRoutes.createJoin),
-                      ),
-                      _ModeCard(
-                        title: 'PLAY WITH ROBOT',
-                        subtitle: 'Solo vs AI',
-                        color: AppColors.police,
-                        onTap: () => context.push(AppRoutes.robot),
-                      ),
-                      _ModeCard(
-                        title: 'PLAY & PASS',
-                        subtitle: 'Same phone, take turns',
-                        color: AppColors.mantri,
-                        onTap: () => context.push(AppRoutes.passAndPlaySetup),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+    return AppShell(
+      padding: EdgeInsets.zero,
+      topBar: TopBar(
+        title: 'Select Mode',
+        onBack: () => context.pop(),
+        showProfile: false,
+      ),
+      body: ListView(
+        padding: AppSpacing.screenPadding,
+        children: [
+          _ModeCard(
+            title: 'HOTSPOT MULTIPLAYER',
+            subtitle: 'Same Wi-Fi / Hotspot',
+            color: AppColors.primary,
+            onTap: () => context.push(AppRoutes.createJoin),
           ),
-        ),
+          _ModeCard(
+            title: 'ONLINE MULTIPLAYER',
+            subtitle: 'Play with friends anywhere',
+            color: const Color(0xFF00A896),
+            onTap: () => context.push(AppRoutes.createJoin),
+          ),
+          _ModeCard(
+            title: 'PLAY WITH ROBOT',
+            subtitle: 'Solo vs AI',
+            color: AppColors.police,
+            onTap: () => context.push(AppRoutes.robot),
+          ),
+          _ModeCard(
+            title: 'PLAY & PASS',
+            subtitle: 'Same phone, take turns',
+            color: AppColors.mantri,
+            onTap: () => context.push(AppRoutes.passAndPlaySetup),
+          ),
+        ],
       ),
     );
   }
@@ -109,7 +91,7 @@ class _ModeCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: CustomButton(
+                  child: GameButton(
                     label: 'PLAY',
                     onPressed: onTap,
                     isFullWidth: false,
