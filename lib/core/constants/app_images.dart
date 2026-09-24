@@ -1,8 +1,9 @@
 /// Image asset path constants for Chor Police Dakat Babu.
 ///
-/// Phase-1 generated library. Paths mirror `assets/images/` folders.
+/// Paths mirror `assets/images/` folders.
 abstract final class AppImages {
   static const String _base = 'assets/images';
+  static const String _ui = '$_base/ui_screens';
 
   // --- Brand ---
   static const String splashLogo = '$_base/dakat_babu_splash.png';
@@ -38,4 +39,53 @@ abstract final class AppImages {
   static const String btnPlayMultiplayer =
       '$_base/buttons/play_multiplayer.png';
   static const String moneyPack = '$_base/money/money_pack.png';
+
+  // --- UI preview boards (design presentation) ---
+  static const String uiBoard01to08 = '$_ui/boards/board_01_08.png';
+  static const String uiBoard09to16 = '$_ui/boards/board_09_16.png';
+  static const String uiBoard17to23 = '$_ui/boards/board_17_23.png';
+
+  // --- Individual screen mockups (portrait) ---
+  static const String screenSplashLoading =
+      '$_ui/individual/screen_01_splash_loading.png';
+  static const String screenHome = '$_ui/individual/screen_02_home.png';
+  static const String screenModeSelection =
+      '$_ui/individual/screen_03_mode_selection.png';
+  static const String screenCreateJoinRoom =
+      '$_ui/individual/screen_04_create_join_room.png';
+  static const String screenWaitingRoom =
+      '$_ui/individual/screen_05_waiting_room.png';
+  static const String screenGameIntro =
+      '$_ui/individual/screen_06_game_intro.png';
+  static const String screenRoleRevealPolice =
+      '$_ui/individual/screen_07_role_reveal_police.png';
+  static const String screenMainGameRoom =
+      '$_ui/individual/screen_08_main_game_room.png';
+  static const String screenSuspectSelection =
+      '$_ui/individual/screen_09_suspect_selection.png';
+  static const String screenCorrectGuess =
+      '$_ui/individual/screen_10_correct_guess.png';
+  static const String screenWrongGuess =
+      '$_ui/individual/screen_11_wrong_guess.png';
+  static const String screenRoundComplete =
+      '$_ui/individual/screen_12_round_complete.png';
+  static const String screenNextRound =
+      '$_ui/individual/screen_13_next_round.png';
+  static const String screenFinalScoreboard =
+      '$_ui/individual/screen_14_final_scoreboard.png';
+  static const String screenPersonalScore =
+      '$_ui/individual/screen_15_personal_score.png';
+  static const String screenBadges = '$_ui/individual/screen_16_badges.png';
+  static const String screenSettings =
+      '$_ui/individual/screen_17_settings.png';
+  static const String screenPlayWithRobot =
+      '$_ui/individual/screen_18_play_with_robot.png';
+  static const String screenPlayAndPass =
+      '$_ui/individual/screen_19_play_and_pass.png';
+  static const String screenHowToPlay =
+      '$_ui/individual/screen_20_how_to_play.png';
+  static const String screenConnectionError =
+      '$_ui/individual/screen_21_connection_error.png';
+  static const String screenConfirmationModals =
+      '$_ui/individual/screen_22_confirmation_modals.png';
 }
