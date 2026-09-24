@@ -2,13 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../presentation/screens/badges/badges_screen.dart';
+import '../../presentation/screens/connection_error/connection_error_screen.dart';
 import '../../presentation/screens/game_round/game_round_screen.dart';
+import '../../presentation/screens/home/create_join_screen.dart';
 import '../../presentation/screens/home/home_screen.dart';
+import '../../presentation/screens/how_to_play/how_to_play_screen.dart';
 import '../../presentation/screens/lobby/lobby_screen.dart';
+import '../../presentation/screens/mode_select/mode_select_screen.dart';
 import '../../presentation/screens/pass_and_play/pass_and_play_game_screen.dart';
 import '../../presentation/screens/pass_and_play/pass_and_play_setup_screen.dart';
 import '../../presentation/screens/results/results_screen.dart';
+import '../../presentation/screens/robot/robot_screen.dart';
+import '../../presentation/screens/scoreboard/personal_score_screen.dart';
 import '../../presentation/screens/scoreboard/scoreboard_screen.dart';
+import '../../presentation/screens/settings/settings_screen.dart';
 import '../../presentation/screens/splash/splash_screen.dart';
 import '../constants/app_text_styles.dart';
 import 'app_routes.dart';
@@ -27,6 +35,46 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.home,
         name: AppRoutes.homeName,
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.modeSelect,
+        name: AppRoutes.modeSelectName,
+        builder: (context, state) => const ModeSelectScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.createJoin,
+        name: AppRoutes.createJoinName,
+        builder: (context, state) => const CreateJoinScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settings,
+        name: AppRoutes.settingsName,
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.badges,
+        name: AppRoutes.badgesName,
+        builder: (context, state) => const BadgesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.howToPlay,
+        name: AppRoutes.howToPlayName,
+        builder: (context, state) => const HowToPlayScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.personalScore,
+        name: AppRoutes.personalScoreName,
+        builder: (context, state) => const PersonalScoreScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.robot,
+        name: AppRoutes.robotName,
+        builder: (context, state) => const RobotScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.connectionError,
+        name: AppRoutes.connectionErrorName,
+        builder: (context, state) => const ConnectionErrorScreen(),
       ),
       GoRoute(
         path: AppRoutes.passAndPlaySetup,
