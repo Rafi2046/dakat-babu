@@ -13,14 +13,12 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/services/sound_service.dart';
-import '../../../core/utils/extensions.dart';
 import '../../../data/models/player_model.dart';
 import '../../../data/models/room_model.dart';
 import '../../../data/models/round_model.dart';
 import '../../viewmodels/game_round_viewmodel.dart';
-import '../../widgets/animated_living_background.dart';
 import '../../widgets/app_feedback.dart';
-import '../../widgets/custom_button.dart';
+import '../../widgets/cpdb/cpdb.dart';
 import '../../widgets/flip_role_card.dart';
 import '../../widgets/game_card.dart';
 import '../../widgets/role_art.dart';
@@ -107,121 +105,68 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
       }
     });
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text(
-          'Round ${roundState.round?.roundNumber ?? 1}',
-          style: AppTextStyles.heading2(),
-        ),
-        leading: IconButton(
-          icon: Icon(PhosphorIcons.door(PhosphorIconsStyle.bold)),
-          tooltip: 'Leave Match',
-          onPressed: () => _handleLeave(context, isHost, currentUserId),
-        ),
+    final currentRound = roundState.round?.roundNumber ?? 1;
+    final totalRounds = roundState.room?.maxRounds ?? 5;
+
+    return AppShell(
+      padding: EdgeInsets.zero,
+      topBar: TopBar(
+        showProfile: false,
+        onBack: () => _handleLeave(context, isHost, currentUserId),
         actions: [
-          // Scoreboard live view button
-          IconButton(
-            icon: Icon(
-              PhosphorIcons.trophy(PhosphorIconsStyle.fill),
-              color: AppColors.accent,
-              size: 20,
-            ),
-            tooltip: 'Scoreboard',
-            onPressed: () => context.push(AppRoutes.scoreboardPath(widget.roomCode)),
+          RoundIndicator(current: currentRound, total: totalRounds),
+          const SizedBox(width: 8),
+          GameTimer(
+            remainingSeconds: roundState.remainingSeconds,
+            urgent: roundState.remainingSeconds <= 10,
           ),
-          // Countdown Timer Pill
-          Container(
-            margin: const EdgeInsets.only(right: AppSpacing.md),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.xs,
-            ),
-            decoration: BoxDecoration(
-              color: roundState.remainingSeconds <= 10
-                  ? AppColors.error.withValues(alpha: 0.25)
-                  : const Color(0x35000000),
-              borderRadius: AppRadius.pillRadius,
-              border: Border.all(
-                color: roundState.remainingSeconds <= 10
-                    ? AppColors.error
-                    : Colors.white.withValues(alpha: 0.12),
-              ),
-              boxShadow: [
-                if (roundState.remainingSeconds <= 10)
-                  BoxShadow(
-                    color: AppColors.error.withValues(alpha: 0.4),
-                    blurRadius: 10,
-                  ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  PhosphorIcons.timer(PhosphorIconsStyle.bold),
-                  size: 15,
-                  color: roundState.remainingSeconds <= 10
-                      ? AppColors.error
-                      : AppColors.textLightPrimary,
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  '${roundState.remainingSeconds}s',
-                  style: AppTextStyles.button(
-                    color: roundState.remainingSeconds <= 10
-                        ? AppColors.error
-                        : AppColors.textLightPrimary,
-                  ).copyWith(fontSize: 13, fontWeight: FontWeight.w700),
-                ),
-              ],
-            ),
+          CpdbIconButton(
+            icon: Icons.emoji_events_rounded,
+            color: AppColors.accent,
+            onPressed: () =>
+                context.push(AppRoutes.scoreboardPath(widget.roomCode)),
           ),
         ],
       ),
       body: Stack(
         children: [
-          AnimatedLivingBackground(
-            child: SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md + 2,
-                  vertical: AppSpacing.sm,
+          SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md + 2,
+              vertical: AppSpacing.sm,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 6),
+
+                // --- 1. Secret Role Reveal Flip Card ---
+                FlipRoleCard(
+                  role: myRole,
+                  isRevealed: roundState.isCardRevealed,
+                  onToggle: () {
+                    HapticFeedback.lightImpact();
+                    ref
+                        .read(gameRoundViewModelProvider(widget.roomCode).notifier)
+                        .toggleCardReveal();
+                  },
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 6),
 
-                    // --- 1. Secret Role Reveal Flip Card ---
-                    FlipRoleCard(
-                      role: myRole,
-                      isRevealed: roundState.isCardRevealed,
-                      onToggle: () {
-                        HapticFeedback.lightImpact();
-                        ref
-                            .read(gameRoundViewModelProvider(widget.roomCode).notifier)
-                            .toggleCardReveal();
-                      },
-                    ),
+                const SizedBox(height: 14),
 
-                    const SizedBox(height: 14),
+                // --- 2. Royal Proclamation Banner ---
+                _buildPublicRolesBanner(roundState, isBabu: isBabu),
 
-                    // --- 2. Royal Proclamation Banner ---
-                    _buildPublicRolesBanner(roundState, isBabu: isBabu),
+                const SizedBox(height: 16),
 
-                    const SizedBox(height: 16),
+                // --- 3. Role-Specific Phase Interface ---
+                if (isPolice)
+                  _buildPoliceInterrogationSection(roundState, currentUserId)
+                else
+                  _buildNonPoliceWaitingSection(roundState, myRole),
 
-                    // --- 3. Role-Specific Phase Interface ---
-                    if (isPolice)
-                      _buildPoliceInterrogationSection(roundState, currentUserId)
-                    else
-                      _buildNonPoliceWaitingSection(roundState, myRole),
-
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
+                const SizedBox(height: 20),
+              ],
             ),
           ),
           if (roundState.isPlayerLeft)
@@ -302,8 +247,7 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
     );
   }
 
-  /// Police "Interrogation Board" with detective case-board aesthetics,
-  /// pinned-photo cards, subtle tilt angles, pulsing red tension glow, and swipe-to-accuse.
+  /// Police interrogation board — select a suspect via [PlayerCard]s.
   Widget _buildPoliceInterrogationSection(
     GameRoundState state,
     String? currentUserId,
@@ -314,9 +258,6 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
           (p) => p?.id == state.selectedSuspectId,
           orElse: () => null,
         );
-
-    // Subtle tilt angles per suspect position for pinned-photo feel
-    const tiltAngles = [-0.035, 0.028, -0.022, 0.032, -0.018];
 
     return AnimatedBuilder(
       animation: _pulseAnimation,
@@ -348,7 +289,6 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Detective Case-Board Header
           Row(
             children: [
               Container(
@@ -378,8 +318,9 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
                       ),
                     ),
                     Text(
-                      'Tap or swipe up on a suspect card to accuse',
-                      style: AppTextStyles.caption(color: Colors.white60).copyWith(fontSize: 10.5),
+                      'Tap a suspect card to accuse',
+                      style: AppTextStyles.caption(color: Colors.white60)
+                          .copyWith(fontSize: 10.5),
                     ),
                   ],
                 ),
@@ -389,16 +330,20 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
                 decoration: BoxDecoration(
                   color: AppColors.error.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: AppColors.error.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.fiber_manual_record, size: 7, color: AppColors.error),
+                    const Icon(Icons.fiber_manual_record,
+                        size: 7, color: AppColors.error),
                     const SizedBox(width: 4),
                     Text(
                       'ACTIVE',
-                      style: AppTextStyles.caption(color: AppColors.error).copyWith(
+                      style: AppTextStyles.caption(color: AppColors.error)
+                          .copyWith(
                         fontWeight: FontWeight.w800,
                         fontSize: 9,
                       ),
@@ -409,101 +354,49 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
             ],
           ),
 
-          const SizedBox(height: 10),
-
-          // Central Clue Connector Tag
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.35),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.error.withValues(alpha: 0.45)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    PhosphorIcons.fingerprint(PhosphorIconsStyle.bold),
-                    size: 12,
-                    color: AppColors.error,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    'EVIDENCE • UNMASK THE CHOR',
-                    style: AppTextStyles.caption(color: Colors.white70).copyWith(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 9.5,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
           const SizedBox(height: 12),
 
-          // Pinned Case-Board Photo Suspect Cards Grid
-          GridView.builder(
-            itemCount: otherPlayers.length,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: otherPlayers.length > 3 ? 2 : 3,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 12,
-              childAspectRatio: otherPlayers.length > 3 ? 1.05 : 0.82,
-            ),
-            itemBuilder: (context, index) {
-              final player = otherPlayers[index];
-              final isBabu = player.id == state.round?.babuPlayerId;
-              final isSelected = state.selectedSuspectId == player.id;
-              final tilt = tiltAngles[index % tiltAngles.length];
-
-              return _buildSuspectCaseBoardCard(
-                player: player,
-                isBabu: isBabu,
-                isSelected: isSelected,
-                tiltAngle: tilt,
-                onTap: () {
-                  HapticFeedback.mediumImpact();
-                  ref
-                      .read(gameRoundViewModelProvider(widget.roomCode).notifier)
-                      .selectSuspect(player.id);
-                },
-                onSwipeUp: () async {
-                  HapticFeedback.mediumImpact();
-                  ref
-                      .read(gameRoundViewModelProvider(widget.roomCode).notifier)
-                      .selectSuspect(player.id);
-                  await ref
-                      .read(gameRoundViewModelProvider(widget.roomCode).notifier)
-                      .submitGuess();
-                },
-              );
-            },
+          PlayerGrid(
+            crossAxisCount: otherPlayers.length > 3 ? 2 : 3,
+            children: [
+              for (final player in otherPlayers)
+                PlayerCard(
+                  name: player.name,
+                  isYou: player.id == currentUserId,
+                  state: state.selectedSuspectId == player.id
+                      ? PlayerCardState.selected
+                      : (player.id == state.round?.babuPlayerId
+                          ? PlayerCardState.babu
+                          : PlayerCardState.suspect),
+                  visibleRole: player.id == state.round?.babuPlayerId
+                      ? GameRole.babu
+                      : null,
+                  onTap: () {
+                    HapticFeedback.mediumImpact();
+                    ref
+                        .read(
+                            gameRoundViewModelProvider(widget.roomCode).notifier)
+                        .selectSuspect(player.id);
+                  },
+                ),
+            ],
           ),
 
           const SizedBox(height: 16),
 
-          // Accusation submission button
-          CustomButton(
+          GameButton(
             label: selectedSuspect != null
                 ? 'Accuse ${selectedSuspect.name} as Chor!'
                 : 'Select a Suspect on the Case-Board',
             variant: ButtonVariant.danger,
-            leading: Icon(
-              PhosphorIcons.gavel(PhosphorIconsStyle.fill),
-              color: Colors.white,
-              size: 18,
-            ),
+            icon: PhosphorIcons.gavel(PhosphorIconsStyle.fill),
             isLoading: state.isSubmittingGuess,
             onPressed: selectedSuspect != null
                 ? () async {
                     HapticFeedback.mediumImpact();
                     await ref
-                        .read(gameRoundViewModelProvider(widget.roomCode).notifier)
+                        .read(
+                            gameRoundViewModelProvider(widget.roomCode).notifier)
                         .submitGuess();
                   }
                 : null,
@@ -513,198 +406,6 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
     );
   }
 
-  /// Single suspect pinned-photo card with subtle rotation tilt, pushpin,
-  /// dashed connection, and swipe-to-accuse gesture.
-  Widget _buildSuspectCaseBoardCard({
-    required PlayerModel player,
-    required bool isBabu,
-    required bool isSelected,
-    required double tiltAngle,
-    required VoidCallback? onTap,
-    required VoidCallback? onSwipeUp,
-  }) {
-    Color borderColor;
-    Color bgColor;
-
-    if (isSelected) {
-      borderColor = AppColors.error;
-      bgColor = AppColors.error.withValues(alpha: 0.18);
-    } else if (isBabu) {
-      borderColor = AppColors.raja.withValues(alpha: 0.35);
-      bgColor = AppColors.raja.withValues(alpha: 0.08);
-    } else {
-      borderColor = Colors.white.withValues(alpha: 0.14);
-      bgColor = const Color(0x38181D2A);
-    }
-
-    return Transform.rotate(
-      angle: tiltAngle,
-      child: GestureDetector(
-        onTap: onTap,
-        onVerticalDragEnd: (details) {
-          if (details.primaryVelocity != null && details.primaryVelocity! < -100) {
-            onSwipeUp?.call();
-          }
-        },
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: borderColor,
-                  width: isSelected ? 2.0 : 1.0,
-                ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: AppColors.error.withValues(alpha: 0.4),
-                          blurRadius: 14,
-                          offset: const Offset(0, 3),
-                        ),
-                      ]
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 4),
-
-                  // Polaroid Avatar Frame
-                  Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isSelected ? AppColors.error : Colors.white24,
-                        width: 1.5,
-                      ),
-                    ),
-                    child: CircleAvatar(
-                      radius: 19,
-                      backgroundColor: isSelected
-                          ? AppColors.error.withValues(alpha: 0.3)
-                          : (isBabu
-                              ? AppColors.raja.withValues(alpha: 0.25)
-                              : AppColors.primary.withValues(alpha: 0.2)),
-                      child: Text(
-                        player.name.initials,
-                        style: AppTextStyles.bodyMedium(
-                          color: isBabu && !isSelected ? AppColors.raja : Colors.white,
-                        ).copyWith(fontWeight: FontWeight.w800, fontSize: 12),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  // Player Name
-                  Text(
-                    player.name,
-                    style: AppTextStyles.bodyMedium().copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 11.5,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: 3),
-
-                  // Role Status / Accuse Indicator
-                  if (isSelected)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.error.withValues(alpha: 0.28),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            PhosphorIcons.arrowUp(PhosphorIconsStyle.bold),
-                            size: 9,
-                            color: AppColors.error,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            'SWIPE / TAP',
-                            style: AppTextStyles.caption(color: AppColors.error).copyWith(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 8,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (isBabu)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.raja.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        'Babu',
-                        style: AppTextStyles.caption(color: AppColors.raja).copyWith(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 8.5,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    )
-                  else
-                    Text(
-                      'Suspect',
-                      style: AppTextStyles.caption(
-                        color: AppColors.textLightMuted,
-                      ).copyWith(fontSize: 9.5),
-                    ),
-                ],
-              ),
-            ),
-
-            // Top Pushpin (detective evidence photo pin)
-            Positioned(
-              top: -5,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  width: 9,
-                  height: 9,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isSelected ? Colors.redAccent : const Color(0xFFE57373),
-                    border: Border.all(color: Colors.white, width: 0.8),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black45,
-                        blurRadius: 3,
-                        offset: Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   /// Non-Police Waiting Screen with animated interrogation radar.
   Widget _buildNonPoliceWaitingSection(GameRoundState state, GameRole? role) {
@@ -885,9 +586,9 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
                 ),
                 AppSpacing.gapVLg,
                 if (isHost) ...[
-                  CustomButton(
+                  GameButton(
                     label: 'Return to Lobby (Invite 4th)',
-                    leading: Icon(PhosphorIcons.userPlus(PhosphorIconsStyle.bold), size: 18),
+                    icon: PhosphorIcons.userPlus(PhosphorIconsStyle.bold),
                     onPressed: () async {
                       await ref
                           .read(gameRoundViewModelProvider(widget.roomCode).notifier)
@@ -895,19 +596,20 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
                     },
                   ),
                   AppSpacing.gapVSm,
-                  CustomButton(
+                  GameButton(
                     label: 'Disband Room',
                     variant: ButtonVariant.danger,
-                    leading: Icon(PhosphorIcons.xCircle(PhosphorIconsStyle.bold), size: 18),
+                    icon: PhosphorIcons.xCircle(PhosphorIconsStyle.bold),
                     onPressed: () async {
-                      final confirm = await AppFeedback.showConfirmationDialog(
+                      final confirm = await ConfirmationDialog.show(
                         context,
                         title: 'Disband Room?',
-                        message: 'Are you sure you want to end this game and return all players to the main hall?',
-                        confirmLabel: 'Disband',
+                        message:
+                            'Are you sure you want to end this game and return all players to the main hall?',
+                        confirmLabel: 'DISBAND',
                         isDestructive: true,
                       );
-                      if (confirm && context.mounted) {
+                      if (confirm == true && context.mounted) {
                         await ref
                             .read(gameRoundViewModelProvider(widget.roomCode).notifier)
                             .cancelGame();
@@ -923,10 +625,10 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
                     textAlign: TextAlign.center,
                   ),
                   AppSpacing.gapVMd,
-                  CustomButton(
+                  GameButton(
                     label: 'Leave Match',
                     variant: ButtonVariant.outlined,
-                    leading: Icon(PhosphorIcons.door(PhosphorIconsStyle.bold), size: 18),
+                    icon: PhosphorIcons.door(PhosphorIconsStyle.bold),
                     onPressed: () => _handleLeave(context, isHost, currentUserId),
                   ),
                 ],
@@ -944,17 +646,17 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
       return;
     }
 
-    final shouldLeave = await AppFeedback.showConfirmationDialog(
+    final shouldLeave = await ConfirmationDialog.show(
       context,
       title: 'Leave Match?',
       message: isHost
           ? 'As host, leaving will pause the round and transfer leadership or disband the room.'
           : 'Leaving mid-match will pause the round for all other players. Are you sure you want to exit?',
-      confirmLabel: 'Leave Match',
+      confirmLabel: 'LEAVE MATCH',
       isDestructive: true,
     );
 
-    if (shouldLeave && context.mounted) {
+    if (shouldLeave == true && context.mounted) {
       await ref.read(gameRoundViewModelProvider(widget.roomCode).notifier).leaveGame(currentUserId);
       if (context.mounted) context.go(AppRoutes.home);
     }
