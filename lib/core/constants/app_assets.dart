@@ -9,6 +9,9 @@ abstract final class AppAssets {
   /// Main DakatBabu game logo.
   static const String logo = '$_imagesBase/dakat_babu_logo.png';
 
+  /// Splash screen brand mark.
+  static const String splashLogo = '$_imagesBase/dakat_babu_splash.png';
+
   /// Background decorative party ornament pattern.
   static const String patternBackground = '$_imagesBase/bg_pattern.png';
 

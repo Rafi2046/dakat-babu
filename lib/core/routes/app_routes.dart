@@ -1,6 +1,9 @@
 /// Named routes and URL path helpers for DakatBabu navigation.
 abstract final class AppRoutes {
   // --- Route Paths ---
+  /// Splash launch screen path.
+  static const String splash = '/splash';
+
   /// Home landing screen path.
   static const String home = '/';
 
@@ -23,6 +26,7 @@ abstract final class AppRoutes {
   static const String passAndPlayGame = '/pass-and-play';
 
   // --- Route Names ---
+  static const String splashName = 'splash';
   static const String homeName = 'home';
   static const String lobbyName = 'lobby';
   static const String gameRoundName = 'gameRound';

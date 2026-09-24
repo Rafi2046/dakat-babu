@@ -9,14 +9,20 @@ import '../../presentation/screens/pass_and_play/pass_and_play_game_screen.dart'
 import '../../presentation/screens/pass_and_play/pass_and_play_setup_screen.dart';
 import '../../presentation/screens/results/results_screen.dart';
 import '../../presentation/screens/scoreboard/scoreboard_screen.dart';
+import '../../presentation/screens/splash/splash_screen.dart';
 import '../constants/app_text_styles.dart';
 import 'app_routes.dart';
 
 /// Provider exposing configured [GoRouter] instance.
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: AppRoutes.home,
+    initialLocation: AppRoutes.splash,
     routes: [
+      GoRoute(
+        path: AppRoutes.splash,
+        name: AppRoutes.splashName,
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(
         path: AppRoutes.home,
         name: AppRoutes.homeName,
