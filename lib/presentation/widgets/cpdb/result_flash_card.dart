@@ -32,7 +32,7 @@ class ResultFlashCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
       decoration: BoxDecoration(
         color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(28),
@@ -47,9 +47,9 @@ class ResultFlashCard extends StatelessWidget {
           Icon(
             isCorrect ? Icons.check_circle : Icons.cancel,
             color: color,
-            size: 64,
+            size: 48,
           ),
-          AppSpacing.gapVMd,
+          AppSpacing.gapVSm,
           Text(
             title,
             textAlign: TextAlign.center,
@@ -62,11 +62,20 @@ class ResultFlashCard extends StatelessWidget {
             style: AppTextStyles.bodyMedium(),
           ),
           if (characterAsset != null) ...[
-            AppSpacing.gapVMd,
-            Image.asset(characterAsset!, height: 140, fit: BoxFit.contain),
+            AppSpacing.gapVSm,
+            Image.asset(
+              characterAsset!,
+              height: 100,
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => Icon(
+                isCorrect ? Icons.local_police : Icons.person,
+                color: color,
+                size: 72,
+              ),
+            ),
           ],
           if (scoreLabel != null) ...[
-            AppSpacing.gapVMd,
+            AppSpacing.gapVSm,
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(

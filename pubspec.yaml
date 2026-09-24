@@ -74,6 +74,30 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/backgrounds/
+    - assets/images/badges/
+    - assets/images/brand/
+    - assets/images/buttons/
+    - assets/images/characters/babu/
+    - assets/images/characters/chor/
+    - assets/images/characters/dakat/
+    - assets/images/characters/police/
+    - assets/images/decorative/
+    - assets/images/feedback/
+    - assets/images/icons/
+    - assets/images/icons/gameplay/
+    - assets/images/icons/multiplayer/
+    - assets/images/icons/nav/
+    - assets/images/icons/social/
+    - assets/images/icons/stats/
+    - assets/images/loading/
+    - assets/images/money/
+    - assets/images/panels/
+    - assets/images/player_cards/
+    - assets/images/role_cards/
+    - assets/images/scoreboard/
+    - assets/images/ui_screens/boards/
+    - assets/images/ui_screens/individual/
     - assets/sounds/
 
   # An image asset can refer to one or more resolution-specific "variants", see

@@ -284,7 +284,7 @@ class PassAndPlayGameScreen extends ConsumerWidget {
       child: Column(
         children: [
           Expanded(
-            flex: 3,
+            flex: 5,
             child: SingleChildScrollView(
               child: ResultFlashCard(
                 isCorrect: correct,
@@ -301,9 +301,9 @@ class PassAndPlayGameScreen extends ConsumerWidget {
               ),
             ),
           ),
-          AppSpacing.gapVSm,
+          const SizedBox(height: 8),
           Expanded(
-            flex: 2,
+            flex: 4,
             child: ScoreboardPanel(
               title: 'ROUND SCORE',
               rows: [
@@ -316,7 +316,7 @@ class PassAndPlayGameScreen extends ConsumerWidget {
               ],
             ),
           ),
-          AppSpacing.gapVSm,
+          const SizedBox(height: 8),
           GameButton(
             label: state.isLastRound ? 'FINAL SCORE' : 'NEXT ROUND',
             onPressed: notifier.nextRound,
