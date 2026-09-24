@@ -31,8 +31,7 @@ class ScoreRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: highlight
             ? AppColors.primary.withValues(alpha: 0.25)
@@ -53,17 +52,19 @@ class ScoreRow extends StatelessWidget {
               ),
             ),
           ),
-          CharacterAvatar(name: name, assetPath: avatarAsset, size: 36),
+          CharacterAvatar(name: name, assetPath: avatarAsset, size: 32),
           AppSpacing.gapHSm,
           Expanded(
-            child: Text(name, style: AppTextStyles.bodyLarge()),
+            child: Text(
+              name,
+              style: AppTextStyles.bodyLarge(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          if (correct != null)
-            _mini('C', correct!, AppColors.success),
-          if (wrong != null)
-            _mini('W', wrong!, AppColors.error),
-          if (policeTags != null)
-            _mini('P', policeTags!, AppColors.police),
+          if (correct != null) _mini('C', correct!, AppColors.success),
+          if (wrong != null) _mini('W', wrong!, AppColors.error),
+          if (policeTags != null) _mini('P', policeTags!, AppColors.police),
           AppSpacing.gapHSm,
           Text(
             '$score',
@@ -86,6 +87,8 @@ class ScoreRow extends StatelessWidget {
 }
 
 /// Live scoreboard panel (bottom 40% of game room).
+///
+/// Must be placed in a bounded-height parent (e.g. [Expanded]).
 class ScoreboardPanel extends StatelessWidget {
   final List<ScoreRow> rows;
   final String title;
@@ -100,7 +103,7 @@ class ScoreboardPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
       decoration: BoxDecoration(
         color: AppColors.surfaceDark.withValues(alpha: 0.92),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -110,8 +113,15 @@ class ScoreboardPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(title, style: AppTextStyles.caption()),
-          AppSpacing.gapVSm,
-          ...rows,
+          const SizedBox(height: 8),
+          Expanded(
+            child: ListView.separated(
+              padding: EdgeInsets.zero,
+              itemCount: rows.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 6),
+              itemBuilder: (context, index) => rows[index],
+            ),
+          ),
         ],
       ),
     );
