@@ -92,25 +92,25 @@ class HomeScreen extends ConsumerWidget {
                 CustomButton(
                   label: 'PLAY MULTIPLAYER',
                   onPressed: () => context.push(AppRoutes.modeSelect),
-                  backgroundColor: AppColors.primary,
+                  variant: ButtonVariant.primary,
                 ),
                 AppSpacing.gapVMd,
                 CustomButton(
                   label: 'PLAY ONLINE',
-                  onPressed: () => context.push(AppRoutes.modeSelect),
-                  backgroundColor: const Color(0xFF00A896),
+                  onPressed: () => context.push(AppRoutes.createJoin),
+                  variant: ButtonVariant.accent,
                 ),
                 AppSpacing.gapVMd,
                 CustomButton(
                   label: 'PLAY WITH ROBOT',
                   onPressed: () => context.push(AppRoutes.robot),
-                  backgroundColor: AppColors.police,
+                  variant: ButtonVariant.secondary,
                 ),
                 AppSpacing.gapVMd,
                 CustomButton(
                   label: 'PLAY & PASS',
                   onPressed: () => context.push(AppRoutes.passAndPlaySetup),
-                  backgroundColor: AppColors.mantri,
+                  variant: ButtonVariant.outlined,
                 ),
                 AppSpacing.gapVXl,
                 Row(
@@ -162,8 +162,7 @@ class _StatChip extends StatelessWidget {
           children: [
             Text(value, style: AppTextStyles.heading3(color: AppColors.raja)),
             Text(label,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.caption()),
+                textAlign: TextAlign.center, style: AppTextStyles.caption()),
           ],
         ),
       ),
