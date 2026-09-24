@@ -1,15 +1,14 @@
 /// State machine stages of a single game round.
 enum RoundStatus {
-  /// Players are viewing their secret role cards; Raja declares himself.
+  /// Players are viewing their secret role cards.
   roleReveal,
 
-  /// Police is interrogating players and making a deduction.
+  /// Police is selecting a suspect.
   policeGuessing,
 
-  /// Police submitted guess; scores calculated and revealed.
+  /// Guess resolved; scores updated.
   completed;
 
-  /// Parses a status string into [RoundStatus].
   static RoundStatus parse(String? value) {
     if (value == null) return RoundStatus.roleReveal;
     switch (value.toLowerCase()) {
@@ -25,7 +24,6 @@ enum RoundStatus {
     }
   }
 
-  /// Serializes enum to snake_case for Supabase.
   String toDbValue() {
     switch (this) {
       case RoundStatus.roleReveal:
@@ -40,72 +38,40 @@ enum RoundStatus {
 
 /// Data model representing an individual round in a match.
 class RoundModel {
-  /// Round record UUID.
   final String id;
-
-  /// Associated room code.
   final String roomCode;
-
-  /// Round sequence number (1, 2, 3...).
   final int roundNumber;
-
-  /// Player ID assigned to the Raja role.
-  final String rajaPlayerId;
-
-  /// Player ID assigned to the Mantri role.
-  final String mantriPlayerId;
-
-  /// Player ID assigned to the Police role.
   final String policePlayerId;
-
-  /// Player ID assigned to the Chor role.
+  final String babuPlayerId;
   final String chorPlayerId;
-
-  /// Player ID assigned to the Chintaykari role (5th player, nullable).
-  final String? chintaykariPlayerId;
-
-  /// Player ID assigned to the Batpar role (6th player, nullable).
-  final String? batparPlayerId;
-
-  /// Suspect player ID chosen by the Police (null until submitted).
+  final String dakatPlayerId;
   final String? policeGuessPlayerId;
-
-  /// Whether the Police accurately picked the Chor.
   final bool? isGuessCorrect;
-
-  /// Current status phase of this round.
   final RoundStatus status;
-
-  /// Round start timestamp.
   final DateTime createdAt;
 
   const RoundModel({
     required this.id,
     required this.roomCode,
     required this.roundNumber,
-    required this.rajaPlayerId,
-    required this.mantriPlayerId,
     required this.policePlayerId,
+    required this.babuPlayerId,
     required this.chorPlayerId,
-    this.chintaykariPlayerId,
-    this.batparPlayerId,
+    required this.dakatPlayerId,
     this.policeGuessPlayerId,
     this.isGuessCorrect,
     this.status = RoundStatus.roleReveal,
     required this.createdAt,
   });
 
-  /// Creates a copy of this round model with updated fields.
   RoundModel copyWith({
     String? id,
     String? roomCode,
     int? roundNumber,
-    String? rajaPlayerId,
-    String? mantriPlayerId,
     String? policePlayerId,
+    String? babuPlayerId,
     String? chorPlayerId,
-    String? chintaykariPlayerId,
-    String? batparPlayerId,
+    String? dakatPlayerId,
     String? policeGuessPlayerId,
     bool? isGuessCorrect,
     RoundStatus? status,
@@ -115,12 +81,10 @@ class RoundModel {
       id: id ?? this.id,
       roomCode: roomCode ?? this.roomCode,
       roundNumber: roundNumber ?? this.roundNumber,
-      rajaPlayerId: rajaPlayerId ?? this.rajaPlayerId,
-      mantriPlayerId: mantriPlayerId ?? this.mantriPlayerId,
       policePlayerId: policePlayerId ?? this.policePlayerId,
+      babuPlayerId: babuPlayerId ?? this.babuPlayerId,
       chorPlayerId: chorPlayerId ?? this.chorPlayerId,
-      chintaykariPlayerId: chintaykariPlayerId ?? this.chintaykariPlayerId,
-      batparPlayerId: batparPlayerId ?? this.batparPlayerId,
+      dakatPlayerId: dakatPlayerId ?? this.dakatPlayerId,
       policeGuessPlayerId: policeGuessPlayerId ?? this.policeGuessPlayerId,
       isGuessCorrect: isGuessCorrect ?? this.isGuessCorrect,
       status: status ?? this.status,
@@ -128,18 +92,19 @@ class RoundModel {
     );
   }
 
-  /// Deserializes a [RoundModel] from a JSON map.
   factory RoundModel.fromJson(Map<String, dynamic> json) {
+    // Support legacy raja/mantri columns during migration.
+    final babuId = (json['babu_player_id'] ?? json['raja_player_id']) as String;
+    final dakatId =
+        (json['dakat_player_id'] ?? json['mantri_player_id']) as String?;
     return RoundModel(
       id: json['id'] as String,
       roomCode: json['room_code'] as String,
       roundNumber: (json['round_number'] as num?)?.toInt() ?? 1,
-      rajaPlayerId: json['raja_player_id'] as String,
-      mantriPlayerId: json['mantri_player_id'] as String,
       policePlayerId: json['police_player_id'] as String,
+      babuPlayerId: babuId,
       chorPlayerId: json['chor_player_id'] as String,
-      chintaykariPlayerId: json['chintaykari_player_id'] as String?,
-      batparPlayerId: json['batpar_player_id'] as String?,
+      dakatPlayerId: dakatId ?? (json['dakat_player_id'] as String? ?? ''),
       policeGuessPlayerId: json['police_guess_player_id'] as String?,
       isGuessCorrect: json['is_guess_correct'] as bool?,
       status: RoundStatus.parse(json['status'] as String?),
@@ -149,28 +114,21 @@ class RoundModel {
     );
   }
 
-  /// Serializes this [RoundModel] into a Supabase-compatible JSON map.
-  Map<String, dynamic> toJson({bool includeExtendedRoles = true}) {
-    final map = <String, dynamic>{
+  Map<String, dynamic> toJson() {
+    return {
       'id': id,
       'room_code': roomCode,
       'round_number': roundNumber,
-      'raja_player_id': rajaPlayerId,
-      'mantri_player_id': mantriPlayerId,
       'police_player_id': policePlayerId,
+      'babu_player_id': babuPlayerId,
       'chor_player_id': chorPlayerId,
-      if (policeGuessPlayerId != null) 'police_guess_player_id': policeGuessPlayerId,
+      'dakat_player_id': dakatPlayerId,
+      if (policeGuessPlayerId != null)
+        'police_guess_player_id': policeGuessPlayerId,
       if (isGuessCorrect != null) 'is_guess_correct': isGuessCorrect,
       'status': status.toDbValue(),
       'created_at': createdAt.toIso8601String(),
     };
-
-    if (includeExtendedRoles) {
-      if (chintaykariPlayerId != null) map['chintaykari_player_id'] = chintaykariPlayerId;
-      if (batparPlayerId != null) map['batpar_player_id'] = batparPlayerId;
-    }
-
-    return map;
   }
 
   @override

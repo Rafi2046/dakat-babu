@@ -1,15 +1,22 @@
 import 'dart:math';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../domain/game/game_engine.dart';
+import '../../domain/game/game_phase.dart';
+import '../../domain/game/game_role.dart';
+import '../../domain/game/player_view.dart';
 
-/// Single player representation in Pass & Play mode.
+/// Single player in Pass & Pass mode.
 class PassAndPlayPlayer {
   final String id;
   final String name;
   final GameRole? role;
   final int totalScore;
   final int roundScore;
+  final int correctGuesses;
+  final int policeTags;
 
   const PassAndPlayPlayer({
     required this.id,
@@ -17,6 +24,8 @@ class PassAndPlayPlayer {
     this.role,
     this.totalScore = 0,
     this.roundScore = 0,
+    this.correctGuesses = 0,
+    this.policeTags = 0,
   });
 
   PassAndPlayPlayer copyWith({
@@ -25,39 +34,42 @@ class PassAndPlayPlayer {
     GameRole? role,
     int? totalScore,
     int? roundScore,
+    int? correctGuesses,
+    int? policeTags,
+    bool clearRole = false,
   }) {
     return PassAndPlayPlayer(
       id: id ?? this.id,
       name: name ?? this.name,
-      role: role ?? this.role,
+      role: clearRole ? null : (role ?? this.role),
       totalScore: totalScore ?? this.totalScore,
       roundScore: roundScore ?? this.roundScore,
+      correctGuesses: correctGuesses ?? this.correctGuesses,
+      policeTags: policeTags ?? this.policeTags,
     );
   }
+
+  EnginePlayer toEngine() => EnginePlayer(
+        id: id,
+        name: name,
+        score: totalScore,
+        correctGuesses: correctGuesses,
+        policeTags: policeTags,
+      );
 }
 
-/// Stages of a Pass & Play local round.
+/// Stages of a Pass & Pass local round (maps onto [GamePhase]).
 enum PassAndPlayStage {
-  /// Prompting to pass device to current peeking player.
   passToPlayer,
-
-  /// Player peeking their secret role card.
   peekRole,
-
-  /// Prompting to hand device to the Police.
   handToPolice,
-
-  /// Police interrogating suspects and tapping an accusation.
   policeAccusing,
-
-  /// Reveal outcome banner, points awarded, and cumulative rankings.
+  confirmSuspect,
   roundResults,
-
-  /// Match concluded all rounds; grand winner podium.
   matchOver,
 }
 
-/// State of the Pass & Play match.
+/// State of the Pass & Pass match.
 class PassAndPlayState {
   final List<PassAndPlayPlayer> players;
   final int currentRound;
@@ -67,6 +79,10 @@ class PassAndPlayState {
   final PassAndPlayStage stage;
   final String? accusedPlayerId;
   final bool? isGuessCorrect;
+  final RoleAssignment? assignment;
+  final String? gameLeadId;
+  final String? previousPoliceId;
+  final GamePhase phase;
 
   const PassAndPlayState({
     this.players = const [],
@@ -77,47 +93,44 @@ class PassAndPlayState {
     this.stage = PassAndPlayStage.passToPlayer,
     this.accusedPlayerId,
     this.isGuessCorrect,
+    this.assignment,
+    this.gameLeadId,
+    this.previousPoliceId,
+    this.phase = GamePhase.roleDistribution,
   });
 
-  /// Player currently slated to hold the phone and peek.
   PassAndPlayPlayer? get currentPeekingPlayer {
     if (players.isEmpty || currentPeekIndex >= players.length) return null;
     return players[currentPeekIndex];
   }
 
-  /// The player assigned as Raja in the current round.
-  PassAndPlayPlayer? get rajaPlayer {
-    return players.cast<PassAndPlayPlayer?>().firstWhere(
-          (p) => p?.role == GameRole.raja,
-          orElse: () => null,
-        );
-  }
-
-  /// The player assigned as Police in the current round.
   PassAndPlayPlayer? get policePlayer {
+    final id = assignment?.policePlayerId;
+    if (id == null) return null;
     return players.cast<PassAndPlayPlayer?>().firstWhere(
-          (p) => p?.role == GameRole.police,
+          (p) => p?.id == id,
           orElse: () => null,
         );
   }
 
-  /// The player assigned as Chor in the current round.
+  PassAndPlayPlayer? get babuPlayer {
+    final id = assignment?.babuPlayerId;
+    if (id == null) return null;
+    return players.cast<PassAndPlayPlayer?>().firstWhere(
+          (p) => p?.id == id,
+          orElse: () => null,
+        );
+  }
+
   PassAndPlayPlayer? get chorPlayer {
+    final id = assignment?.chorPlayerId;
+    if (id == null) return null;
     return players.cast<PassAndPlayPlayer?>().firstWhere(
-          (p) => p?.role == GameRole.chor,
+          (p) => p?.id == id,
           orElse: () => null,
         );
   }
 
-  /// The player assigned as Mantri in the current round.
-  PassAndPlayPlayer? get mantriPlayer {
-    return players.cast<PassAndPlayPlayer?>().firstWhere(
-          (p) => p?.role == GameRole.mantri,
-          orElse: () => null,
-        );
-  }
-
-  /// The accused player chosen by Police.
   PassAndPlayPlayer? get accusedPlayer {
     return players.cast<PassAndPlayPlayer?>().firstWhere(
           (p) => p?.id == accusedPlayerId,
@@ -125,21 +138,29 @@ class PassAndPlayState {
         );
   }
 
-  /// The suspects available for Police to interrogate (Mantri and Chor).
+  /// Suspects for Police = everyone except Police.
   List<PassAndPlayPlayer> get suspects {
-    return players
-        .where((p) => p.role != GameRole.police && p.role != GameRole.raja)
-        .toList();
+    final policeId = assignment?.policePlayerId;
+    return players.where((p) => p.id != policeId).toList();
   }
 
-  /// Leaderboard ordered by descending total score.
+  /// Privacy view for the Police during accusation.
+  PlayerView? get policeView {
+    final a = assignment;
+    if (a == null) return null;
+    return GameEngine.buildPlayerView(
+      viewerId: a.policePlayerId,
+      players: players.map((p) => p.toEngine()).toList(),
+      assignment: a,
+    );
+  }
+
   List<PassAndPlayPlayer> get leaderboard {
     final list = List<PassAndPlayPlayer>.from(players);
     list.sort((a, b) => b.totalScore.compareTo(a.totalScore));
     return list;
   }
 
-  /// Whether current match has reached its final round.
   bool get isLastRound => currentRound >= totalRounds;
 
   PassAndPlayState copyWith({
@@ -151,6 +172,10 @@ class PassAndPlayState {
     PassAndPlayStage? stage,
     String? accusedPlayerId,
     bool? isGuessCorrect,
+    RoleAssignment? assignment,
+    String? gameLeadId,
+    String? previousPoliceId,
+    GamePhase? phase,
     bool clearAccusation = false,
   }) {
     return PassAndPlayState(
@@ -160,13 +185,19 @@ class PassAndPlayState {
       currentPeekIndex: currentPeekIndex ?? this.currentPeekIndex,
       isCardRevealed: isCardRevealed ?? this.isCardRevealed,
       stage: stage ?? this.stage,
-      accusedPlayerId: clearAccusation ? null : (accusedPlayerId ?? this.accusedPlayerId),
-      isGuessCorrect: clearAccusation ? null : (isGuessCorrect ?? this.isGuessCorrect),
+      accusedPlayerId:
+          clearAccusation ? null : (accusedPlayerId ?? this.accusedPlayerId),
+      isGuessCorrect:
+          clearAccusation ? null : (isGuessCorrect ?? this.isGuessCorrect),
+      assignment: assignment ?? this.assignment,
+      gameLeadId: gameLeadId ?? this.gameLeadId,
+      previousPoliceId: previousPoliceId ?? this.previousPoliceId,
+      phase: phase ?? this.phase,
     );
   }
 }
 
-/// ViewModel coordinating the Pass & Play single-device workflow.
+/// ViewModel coordinating Pass & Pass using [GameEngine].
 class PassAndPlayViewModel extends StateNotifier<PassAndPlayState> {
   final Random _random;
 
@@ -174,18 +205,23 @@ class PassAndPlayViewModel extends StateNotifier<PassAndPlayState> {
       : _random = random ?? Random.secure(),
         super(const PassAndPlayState());
 
-  /// Initializes a new match with player names and total rounds.
   void initMatch({
     required List<String> playerNames,
     int totalRounds = AppConstants.defaultTotalRounds,
   }) {
+    if (playerNames.length != GameEngine.requiredPlayers) {
+      throw ArgumentError(
+        'Pass & Pass requires exactly ${GameEngine.requiredPlayers} players',
+      );
+    }
+
     final players = List.generate(
       playerNames.length,
       (i) => PassAndPlayPlayer(
         id: 'p_${i + 1}',
-        name: playerNames[i].trim().isEmpty ? 'Player ${i + 1}' : playerNames[i].trim(),
-        totalScore: 0,
-        roundScore: 0,
+        name: playerNames[i].trim().isEmpty
+            ? 'Player ${i + 1}'
+            : playerNames[i].trim(),
       ),
     );
 
@@ -193,169 +229,176 @@ class PassAndPlayViewModel extends StateNotifier<PassAndPlayState> {
       players: players,
       currentRound: 1,
       totalRounds: totalRounds,
+      gameLeadId: players.first.id,
       stage: PassAndPlayStage.passToPlayer,
+      phase: GamePhase.roleDistribution,
     );
 
     _assignRolesAndStartRound();
   }
 
-  /// Shuffles roles and assigns 1 each to the players for the new round.
-  /// Guarantees that no player gets the exact same role as their previous round.
   void _assignRolesAndStartRound() {
-    final prevRoles = state.players.map((p) => p.role).toList();
-    final hasPrevRoles = prevRoles.every((r) => r != null);
-    final count = state.players.length;
+    final enginePlayers = state.players.map((p) => p.toEngine()).toList();
+    final assignment = GameEngine.assignRoles(
+      enginePlayers,
+      random: _random,
+    );
 
-    final allRoles = [
-      GameRole.raja,
-      GameRole.mantri,
-      GameRole.police,
-      GameRole.chor,
-      if (count >= 5) GameRole.chintaykari,
-      if (count >= 6) GameRole.batpar,
-    ];
-
-    List<GameRole> roles;
-    int attempts = 0;
-    do {
-      roles = List<GameRole>.from(allRoles)..shuffle(_random);
-      attempts++;
-    } while (hasPrevRoles &&
-        attempts < 50 &&
-        List.generate(count, (i) => roles[i] == prevRoles[i]).any((same) => same));
-
-    final updatedPlayers = <PassAndPlayPlayer>[];
-    for (var i = 0; i < state.players.length; i++) {
-      updatedPlayers.add(
-        state.players[i].copyWith(
-          role: roles[i],
-          roundScore: 0,
-        ),
+    final updatedPlayers = state.players.map((p) {
+      return p.copyWith(
+        role: assignment.roleOf(p.id),
+        roundScore: 0,
       );
-    }
+    }).toList();
 
     state = state.copyWith(
       players: updatedPlayers,
+      assignment: assignment,
       currentPeekIndex: 0,
       isCardRevealed: false,
       stage: PassAndPlayStage.passToPlayer,
+      phase: GamePhase.roleReveal,
       clearAccusation: true,
     );
   }
 
-  /// Current player confirms they have the phone and are ready to peek.
   void readyToPeek() {
+    // Privacy: ensure card starts face-down when phone is passed.
     state = state.copyWith(
       stage: PassAndPlayStage.peekRole,
       isCardRevealed: false,
+      phase: GamePhase.roleReveal,
     );
   }
 
-  /// Toggles the secret 3D flip card unmasking.
   void toggleCardReveal() {
     state = state.copyWith(isCardRevealed: !state.isCardRevealed);
   }
 
-  /// Current player has finished peeking; hide card and advance to next player or Police.
   void finishPeekingCurrentPlayer() {
+    // Clear reveal before advancing — privacy handoff.
     final nextIndex = state.currentPeekIndex + 1;
     if (nextIndex < state.players.length) {
-      // Advance to next player's turn to hold the phone
       state = state.copyWith(
         currentPeekIndex: nextIndex,
         isCardRevealed: false,
         stage: PassAndPlayStage.passToPlayer,
       );
     } else {
-      // All players have peeked! Hand phone to the Police
       state = state.copyWith(
         isCardRevealed: false,
         stage: PassAndPlayStage.handToPolice,
+        phase: GamePhase.policeTurn,
       );
     }
   }
 
-  /// Police confirms receipt of the phone; opens interrogation screen.
   void beginPoliceInterrogation() {
-    state = state.copyWith(stage: PassAndPlayStage.policeAccusing);
-  }
-
-  /// Police selects their accused suspect.
-  void makeAccusation(String accusedPlayerId) {
-    final accused = state.players.firstWhere((p) => p.id == accusedPlayerId);
-    final isCorrect = accused.role == GameRole.chor;
-
-    final updatedPlayers = state.players.map((p) {
-      int roundScore = 0;
-      switch (p.role) {
-        case GameRole.raja:
-          roundScore = AppConstants.rajaPoints;
-          break;
-        case GameRole.mantri:
-          roundScore = AppConstants.mantriPoints;
-          break;
-        case GameRole.police:
-          roundScore = isCorrect
-              ? AppConstants.policeCorrectPoints
-              : AppConstants.policeWrongPoints;
-          break;
-        case GameRole.chor:
-          roundScore = isCorrect
-              ? AppConstants.chorCaughtPoints
-              : AppConstants.chorSuccessPoints;
-          break;
-        case GameRole.chintaykari:
-          roundScore = AppConstants.chintaykariDefaultPoints;
-          break;
-        case GameRole.batpar:
-          roundScore = AppConstants.batparDefaultPoints;
-          break;
-        case null:
-          roundScore = 0;
-          break;
-      }
-
-      return p.copyWith(
-        roundScore: roundScore,
-        totalScore: p.totalScore + roundScore,
-      );
-    }).toList();
-
     state = state.copyWith(
-      players: updatedPlayers,
-      accusedPlayerId: accusedPlayerId,
-      isGuessCorrect: isCorrect,
-      stage: PassAndPlayStage.roundResults,
+      stage: PassAndPlayStage.policeAccusing,
+      phase: GamePhase.suspectSelection,
+      accusedPlayerId: null,
     );
   }
 
-  /// Advances to the next round or finishes match.
+  void selectSuspect(String accusedPlayerId) {
+    state = state.copyWith(
+      accusedPlayerId: accusedPlayerId,
+      stage: PassAndPlayStage.confirmSuspect,
+      phase: GamePhase.guessConfirmation,
+    );
+  }
+
+  void cancelSuspect() {
+    state = state.copyWith(
+      clearAccusation: true,
+      stage: PassAndPlayStage.policeAccusing,
+      phase: GamePhase.suspectSelection,
+    );
+  }
+
+  void confirmAccusation() {
+    final suspectId = state.accusedPlayerId;
+    final assignment = state.assignment;
+    if (suspectId == null || assignment == null) return;
+
+    final enginePlayers = state.players.map((p) => p.toEngine()).toList();
+    final result = GameEngine.resolveGuess(
+      players: enginePlayers,
+      assignment: assignment,
+      suspectPlayerId: suspectId,
+    );
+    final applied = GameEngine.applyGuessResult(enginePlayers, result);
+
+    final updatedPlayers = <PassAndPlayPlayer>[];
+    for (var i = 0; i < state.players.length; i++) {
+      final before = state.players[i];
+      final after = applied[i];
+      final delta = after.score - before.totalScore;
+      updatedPlayers.add(
+        before.copyWith(
+          totalScore: after.score,
+          roundScore: delta,
+          correctGuesses: after.correctGuesses,
+          policeTags: after.policeTags,
+        ),
+      );
+    }
+
+    state = state.copyWith(
+      players: updatedPlayers,
+      accusedPlayerId: suspectId,
+      isGuessCorrect: result.isCorrect,
+      stage: PassAndPlayStage.roundResults,
+      phase: GamePhase.result,
+      previousPoliceId: assignment.policePlayerId,
+    );
+  }
+
+  /// Legacy alias used by older UI.
+  void makeAccusation(String accusedPlayerId) {
+    selectSuspect(accusedPlayerId);
+    confirmAccusation();
+  }
+
   void nextRound() {
     if (state.isLastRound) {
-      state = state.copyWith(stage: PassAndPlayStage.matchOver);
+      state = state.copyWith(
+        stage: PassAndPlayStage.matchOver,
+        phase: GamePhase.finalScore,
+      );
     } else {
-      state = state.copyWith(currentRound: state.currentRound + 1);
+      state = state.copyWith(
+        currentRound: state.currentRound + 1,
+        phase: GamePhase.nextRound,
+      );
       _assignRolesAndStartRound();
     }
   }
 
-  /// Restart match with same players.
   void restartMatch() {
-    final resetPlayers = state.players.map((p) {
-      return p.copyWith(totalScore: 0, roundScore: 0);
-    }).toList();
+    final resetPlayers = state.players
+        .map(
+          (p) => p.copyWith(
+            totalScore: 0,
+            roundScore: 0,
+            correctGuesses: 0,
+            policeTags: 0,
+          ),
+        )
+        .toList();
 
     state = state.copyWith(
       players: resetPlayers,
       currentRound: 1,
+      previousPoliceId: null,
       stage: PassAndPlayStage.passToPlayer,
+      phase: GamePhase.roleDistribution,
     );
-
     _assignRolesAndStartRound();
   }
 }
 
-/// Riverpod provider for Pass & Play state.
 final passAndPlayViewModelProvider =
     StateNotifierProvider<PassAndPlayViewModel, PassAndPlayState>((ref) {
   return PassAndPlayViewModel();

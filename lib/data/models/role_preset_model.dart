@@ -1,18 +1,11 @@
 import '../../core/constants/app_constants.dart';
 import '../../core/utils/extensions.dart';
 
-/// Represents a configurable naming and styling preset for game roles.
+/// Role naming preset — CPDB is the only production preset.
 class RolePresetModel {
-  /// Unique identifier for the preset (e.g., 'classic', 'chor_police_dakat_babu', 'custom').
   final String id;
-
-  /// Display name of the preset.
   final String name;
-
-  /// Descriptive subtitle for the preset.
   final String description;
-
-  /// Mapping from [GameRole] to custom role display name.
   final Map<GameRole, String> roleLabels;
 
   const RolePresetModel({
@@ -22,62 +15,38 @@ class RolePresetModel {
     required this.roleLabels,
   });
 
-  /// Classic Raja-Mantri-Police-Chor preset.
-  static const RolePresetModel classic = RolePresetModel(
-    id: 'classic',
-    name: 'Classic (Raja-Mantri)',
-    description: 'Traditional Royal Court: Raja, Mantri, Police, Chor',
-    roleLabels: {
-      GameRole.raja: 'Raja',
-      GameRole.mantri: 'Mantri',
-      GameRole.police: 'Police',
-      GameRole.chor: 'Chor',
-      GameRole.chintaykari: 'Chintaykari',
-      GameRole.batpar: 'Batpar',
-    },
-  );
-
-  /// Chor, Police, Dakat, Babu preset.
   static const RolePresetModel chorPoliceDakatBabu = RolePresetModel(
     id: 'chor_police_dakat_babu',
     name: 'Chor-Police-Dakat-Babu',
-    description: 'Babu (King), Dewan (Mantri), Police, Dakat (Thief)',
+    description: 'Police, Babu, Chor, Dakat — classic Bangladeshi party game',
     roleLabels: {
-      GameRole.raja: 'Babu',
-      GameRole.mantri: 'Dewan',
       GameRole.police: 'Police',
-      GameRole.chor: 'Dakat',
-      GameRole.chintaykari: 'Chintaykari',
-      GameRole.batpar: 'Batpar',
+      GameRole.babu: 'Babu',
+      GameRole.chor: 'Chor',
+      GameRole.dakat: 'Dakat',
     },
   );
 
-  /// All available built-in presets.
+  /// Alias kept for older call sites.
+  static const RolePresetModel classic = chorPoliceDakatBabu;
+
   static const List<RolePresetModel> builtInPresets = [
-    classic,
     chorPoliceDakatBabu,
   ];
 
-  /// Finds preset by ID, falling back to [classic].
   static RolePresetModel fromId(String? id) {
-    if (id == null) return classic;
+    if (id == null) return chorPoliceDakatBabu;
     return builtInPresets.firstWhere(
       (p) => p.id == id,
-      orElse: () => classic,
+      orElse: () => chorPoliceDakatBabu,
     );
   }
 
-  /// Gets the custom label for [role], or standard role shortName as fallback.
-  String getLabel(GameRole role) {
-    return roleLabels[role] ?? role.shortName;
-  }
+  String getLabel(GameRole role) => roleLabels[role] ?? role.shortName;
 
-  /// Converts roleLabels to a JSON-serializable `Map<String, String>`.
-  Map<String, String> toLabelsJson() {
-    return roleLabels.map((key, value) => MapEntry(key.name, value));
-  }
+  Map<String, String> toLabelsJson() =>
+      roleLabels.map((key, value) => MapEntry(key.name, value));
 
-  /// Recreates [RolePresetModel] from stored JSON.
   factory RolePresetModel.fromJson({
     required String id,
     required String name,
@@ -91,7 +60,6 @@ class RolePresetModel {
         labels[role] = entry.value.toString();
       }
     }
-    // Fill in defaults if any role is missing
     for (final role in GameRole.values) {
       labels.putIfAbsent(role, () => role.shortName);
     }
@@ -103,7 +71,6 @@ class RolePresetModel {
     );
   }
 
-  /// Creates a copy with optionally modified role labels.
   RolePresetModel copyWith({
     String? id,
     String? name,

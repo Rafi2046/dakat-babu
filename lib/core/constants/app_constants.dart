@@ -1,30 +1,35 @@
-/// Application constants for DakatBabu.
+/// Application constants for Chor Police Dakat Babu.
+library;
+
+export '../../domain/game/game_role.dart';
+
+/// Application constants for Chor Police Dakat Babu.
 ///
 /// Contains game rules, Supabase table identifiers, timeout settings,
 /// and backend configuration keys.
 abstract final class AppConstants {
   // --- Application Metadata ---
   /// Human-readable application title.
-  static const String appName = 'DakatBabu';
+  static const String appName = 'Chor Police Dakat Babu';
 
   /// Application semantic version string.
   static const String appVersion = '1.0.0';
 
   /// Tagline used across splash and landing screens.
-  static const String appTagline = 'The Royal Chor-Police Party Game';
+  static const String appTagline = 'চোর ধরো, নিজে ধরা খেও না!';
 
-  // --- Game Rule Constraints ---
+  // --- Game Rule Constraints (locked 2A: exactly 4 players) ---
   /// Required minimum number of players to start a round.
   static const int minPlayers = 4;
 
-  /// Required maximum number of players per game room (supports 4, 5, or 6).
-  static const int maxPlayers = 6;
+  /// Required maximum number of players per game room.
+  static const int maxPlayers = 4;
 
   /// Default player count for standard rooms.
   static const int defaultPlayers = 4;
 
   /// Length of the alphanumeric room join code.
-  static const int roomCodeLength = 6;
+  static const int roomCodeLength = 5;
 
   /// Duration in seconds for the Police's deduction phase.
   static const int roundTimeoutSeconds = 30;
@@ -38,30 +43,19 @@ abstract final class AppConstants {
   /// Maximum attempts to generate a collision-free room code.
   static const int maxRoomCodeRetries = 5;
 
-  // --- Role Point Values (Defaults) ---
-  /// Points awarded to the Raja (King).
-  static const int rajaPoints = 1000;
+  // --- Scoring (locked 1A: +1 system) ---
+  /// Points awarded on a correct Police catch (Chor).
+  static const int policeCorrectPoints = 1;
 
-  /// Points awarded to the Mantri (Minister).
-  static const int mantriPoints = 800;
+  /// Points awarded to the selected suspect on a wrong guess.
+  static const int wrongGuessSuspectPoints = 1;
 
-  /// Points awarded to the Police when the Chor is correctly identified.
-  static const int policeCorrectPoints = 500;
+  /// Deep link scheme for QR join.
+  static const String joinDeepLinkScheme = 'dakatbabu';
 
-  /// Points awarded to the Chor if Police fails to identify them.
-  static const int chorSuccessPoints = 500;
-
-  /// Points awarded to the Chor when caught by Police.
-  static const int chorCaughtPoints = 0;
-
-  /// Points awarded to the Police when they guess incorrectly.
-  static const int policeWrongPoints = 0;
-
-  /// Default points awarded to Chintaykari (5th player civilian role).
-  static const int chintaykariDefaultPoints = 500;
-
-  /// Default points awarded to Batpar (6th player civilian role).
-  static const int batparDefaultPoints = 300;
+  /// Builds a join deep-link URI for [roomCode].
+  static String joinDeepLink(String roomCode) =>
+      '$joinDeepLinkScheme://join/$roomCode';
 
   // --- Supabase Table Names ---
   /// Database table for game rooms.
@@ -72,6 +66,9 @@ abstract final class AppConstants {
 
   /// Database table for round status and role distribution.
   static const String roundsTable = 'game_rounds';
+
+  /// Private per-player role rows (RLS scoped).
+  static const String privateRolesTable = 'player_private_roles';
 
   // --- Supabase Realtime Channels ---
   /// Channel prefix for room-specific realtime events.
@@ -105,34 +102,3 @@ abstract final class AppConstants {
     return url;
   }
 }
-
-/// The game roles in Chor-Police-Raja-Mantri (supports up to 6 players).
-enum GameRole {
-  /// King (1000 points) - declares themself at the start of the round.
-  raja,
-
-  /// Minister (800 points) - assists the court.
-  mantri,
-
-  /// Police/Inspector (500 points) - must identify the Chor among remaining suspects.
-  police,
-
-  /// Thief/Dakat (0 or 500 points) - attempts to deceive the Police.
-  chor,
-
-  /// 5th Player Role: Chintaykari (Snatcher/Mugger) - civilian role in suspect pool, fixed points.
-  chintaykari,
-
-  /// 6th Player Role: Batpar (Swindler/Hustler) - civilian role in suspect pool, fixed points.
-  batpar;
-
-  /// Parses a string into a [GameRole], returning null if not found.
-  static GameRole? tryParse(String? value) {
-    if (value == null) return null;
-    return GameRole.values.cast<GameRole?>().firstWhere(
-          (r) => r?.name.toLowerCase() == value.toLowerCase(),
-          orElse: () => null,
-        );
-  }
-}
-

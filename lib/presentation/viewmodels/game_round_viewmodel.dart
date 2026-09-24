@@ -51,10 +51,10 @@ class GameRoundState {
       (players.length < (room?.maxPlayers ?? AppConstants.defaultPlayers) && players.isNotEmpty) ||
       (room?.status == RoomStatus.playerLeft);
 
-  /// The player assigned to the Raja role.
-  PlayerModel? get rajaPlayer =>
+  /// The player assigned to the Babu role.
+  PlayerModel? get babuPlayer =>
       players.cast<PlayerModel?>().firstWhere(
-            (p) => p?.id == round?.rajaPlayerId,
+            (p) => p?.id == round?.babuPlayerId,
             orElse: () => null,
           );
 
@@ -65,9 +65,9 @@ class GameRoundState {
             orElse: () => null,
           );
 
-  /// Suspects the Police can accuse (everyone except Raja and Police).
+  /// Suspects the Police can accuse (everyone except Police).
   List<PlayerModel> get suspects => players
-      .where((p) => p.id != round?.rajaPlayerId && p.id != round?.policePlayerId)
+      .where((p) => p.id != round?.policePlayerId)
       .toList();
 
   /// Whether current local user is the Police.

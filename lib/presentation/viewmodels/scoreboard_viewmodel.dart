@@ -58,18 +58,14 @@ class ScoreboardState {
     final entries = <ScoreboardRoundEntry>[];
     for (final round in rounds) {
       GameRole? role;
-      if (round.rajaPlayerId == playerId) {
-        role = GameRole.raja;
-      } else if (round.mantriPlayerId == playerId) {
-        role = GameRole.mantri;
-      } else if (round.policePlayerId == playerId) {
+      if (round.policePlayerId == playerId) {
         role = GameRole.police;
+      } else if (round.babuPlayerId == playerId) {
+        role = GameRole.babu;
       } else if (round.chorPlayerId == playerId) {
         role = GameRole.chor;
-      } else if (round.chintaykariPlayerId == playerId) {
-        role = GameRole.chintaykari;
-      } else if (round.batparPlayerId == playerId) {
-        role = GameRole.batpar;
+      } else if (round.dakatPlayerId == playerId) {
+        role = GameRole.dakat;
       }
 
       if (role == null) continue;
@@ -77,32 +73,16 @@ class ScoreboardState {
       final roleLabel = room?.getLabelForRole(role) ?? role.shortName;
       final isCorrect = round.isGuessCorrect ?? false;
 
+      // Reconstruct +1 scoring for completed rounds.
       int points = 0;
-      switch (role) {
-        case GameRole.raja:
-          points = room?.getPointsForRole(GameRole.raja) ?? AppConstants.rajaPoints;
-          break;
-        case GameRole.mantri:
-          points = room?.getPointsForRole(GameRole.mantri) ?? AppConstants.mantriPoints;
-          break;
-        case GameRole.police:
-          points = isCorrect
-              ? (room?.getPointsForRole(GameRole.police) ?? AppConstants.policeCorrectPoints)
-              : AppConstants.policeWrongPoints;
-          break;
-        case GameRole.chor:
-          points = isCorrect
-              ? AppConstants.chorCaughtPoints
-              : (room?.getPointsForRole(GameRole.chor) ?? AppConstants.chorSuccessPoints);
-          break;
-        case GameRole.chintaykari:
-          points = room?.getPointsForRole(GameRole.chintaykari) ??
-              AppConstants.chintaykariDefaultPoints;
-          break;
-        case GameRole.batpar:
-          points = room?.getPointsForRole(GameRole.batpar) ??
-              AppConstants.batparDefaultPoints;
-          break;
+      if (round.status == RoundStatus.completed &&
+          round.policeGuessPlayerId != null) {
+        if (isCorrect && role == GameRole.police) {
+          points = AppConstants.policeCorrectPoints;
+        } else if (!isCorrect &&
+            round.policeGuessPlayerId == playerId) {
+          points = AppConstants.wrongGuessSuspectPoints;
+        }
       }
 
       entries.add(
