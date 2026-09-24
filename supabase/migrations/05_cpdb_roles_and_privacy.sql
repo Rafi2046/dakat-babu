@@ -46,7 +46,10 @@ drop policy if exists private_roles_insert_own on public.player_private_roles;
 create policy private_roles_insert_own on public.player_private_roles
   for insert with check (auth.uid()::text = player_id);
 
--- Force rooms to 4 players for CPDB
+-- Force rooms to 4 players for CPDB (add column if migration 04 was never applied)
+alter table public.rooms
+  add column if not exists max_players integer not null default 4;
+
 update public.rooms set max_players = 4 where max_players is distinct from 4;
 
 -- RPC: resolve_guess (server-side scoring authority)
