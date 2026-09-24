@@ -10,7 +10,7 @@ import '../../viewmodels/robot_match_viewmodel.dart';
 import '../../widgets/animated_living_background.dart';
 import '../../widgets/custom_button.dart';
 
-/// Robot difficulty picker then launches Pass & Pass-style flow with bots.
+/// Robot difficulty picker then launches Pass & Pass with bot names.
 class RobotScreen extends ConsumerStatefulWidget {
   const RobotScreen({super.key});
 
@@ -19,7 +19,6 @@ class RobotScreen extends ConsumerStatefulWidget {
 }
 
 class _RobotScreenState extends ConsumerState<RobotScreen> {
-  RobotDifficulty _difficulty = RobotDifficulty.medium;
   final _nameCtrl = TextEditingController(text: 'You');
 
   @override
@@ -28,24 +27,10 @@ class _RobotScreenState extends ConsumerState<RobotScreen> {
     super.dispose();
   }
 
-  void _start() {
-    final name = _nameCtrl.text.trim().isEmpty ? 'You' : _nameCtrl.text.trim();
-    ref.read(playerProfileStoreProvider).setPlayerName(name);
-    ref.read(robotMatchViewModelProvider.notifier).start(
-          humanName: name,
-          difficulty: _difficulty,
-        );
-    // Reuse pass-and-play game screen with robot-seeded VM via shared pass provider.
-    final robot = ref.read(robotMatchViewModelProvider.notifier);
-    // Copy inner state into pass-and-play provider for shared UI.
-    // For simplicity navigate to a dedicated robot game using pass-and-play after init.
-    robot.controller; // ensure init
-    // Seed global pass-and-play with same names then jump.
-    context.push(AppRoutes.passAndPlaySetup);
-  }
-
   @override
   Widget build(BuildContext context) {
+    final difficulty = ref.watch(robotDifficultyProvider);
+
     return Scaffold(
       body: AnimatedLivingBackground(
         child: SafeArea(
@@ -74,27 +59,30 @@ class _RobotScreenState extends ConsumerState<RobotScreen> {
                 AppSpacing.gapVMd,
                 CustomButton(
                   label: 'EASY',
-                  onPressed: () =>
-                      setState(() => _difficulty = RobotDifficulty.easy),
-                  variant: _difficulty == RobotDifficulty.easy
+                  onPressed: () => ref
+                      .read(robotDifficultyProvider.notifier)
+                      .setDifficulty(RobotDifficulty.easy),
+                  variant: difficulty == RobotDifficulty.easy
                       ? ButtonVariant.primary
                       : ButtonVariant.outlined,
                 ),
                 AppSpacing.gapVSm,
                 CustomButton(
                   label: 'MEDIUM',
-                  onPressed: () =>
-                      setState(() => _difficulty = RobotDifficulty.medium),
-                  variant: _difficulty == RobotDifficulty.medium
+                  onPressed: () => ref
+                      .read(robotDifficultyProvider.notifier)
+                      .setDifficulty(RobotDifficulty.medium),
+                  variant: difficulty == RobotDifficulty.medium
                       ? ButtonVariant.accent
                       : ButtonVariant.outlined,
                 ),
                 AppSpacing.gapVSm,
                 CustomButton(
                   label: 'HARD',
-                  onPressed: () =>
-                      setState(() => _difficulty = RobotDifficulty.hard),
-                  variant: _difficulty == RobotDifficulty.hard
+                  onPressed: () => ref
+                      .read(robotDifficultyProvider.notifier)
+                      .setDifficulty(RobotDifficulty.hard),
+                  variant: difficulty == RobotDifficulty.hard
                       ? ButtonVariant.danger
                       : ButtonVariant.outlined,
                 ),
@@ -106,12 +94,11 @@ class _RobotScreenState extends ConsumerState<RobotScreen> {
                         ? 'You'
                         : _nameCtrl.text.trim();
                     ref.read(playerProfileStoreProvider).setPlayerName(name);
-                    // Use pass-and-play with 1 human + 3 bot names.
                     context.push(
                       AppRoutes.passAndPlaySetup,
                       extra: {
                         'botMode': true,
-                        'difficulty': _difficulty.name,
+                        'difficulty': difficulty.name,
                         'humanName': name,
                       },
                     );

@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_constants.dart';
-import 'pass_and_play_viewmodel.dart';
 
 /// Robot difficulty for solo mode.
 enum RobotDifficulty { easy, medium, hard }
@@ -14,7 +13,6 @@ class RobotMatchViewModel extends StateNotifier<RobotDifficulty> {
 
   void setDifficulty(RobotDifficulty d) => state = d;
 
-  /// Returns 4 names for Pass & Pass init (human first).
   List<String> buildRoster(String humanName) {
     return [
       humanName.trim().isEmpty ? 'You' : humanName.trim(),
@@ -24,7 +22,6 @@ class RobotMatchViewModel extends StateNotifier<RobotDifficulty> {
     ];
   }
 
-  /// Picks a suspect id without using private role knowledge.
   static String pickSuspect({
     required List<String> suspectIds,
     required RobotDifficulty difficulty,
@@ -37,11 +34,8 @@ class RobotMatchViewModel extends StateNotifier<RobotDifficulty> {
     final shuffled = List<String>.from(suspectIds)..shuffle(rng);
     switch (difficulty) {
       case RobotDifficulty.easy:
-        return shuffled.first;
       case RobotDifficulty.medium:
-        return shuffled[rng.nextInt(shuffled.length)];
       case RobotDifficulty.hard:
-        // Prefer later indices slightly (pseudo-skill without leaking roles).
         return shuffled[rng.nextInt(shuffled.length)];
     }
   }
@@ -52,5 +46,4 @@ final robotDifficultyProvider =
   return RobotMatchViewModel();
 });
 
-/// Convenience: default total rounds for robot matches.
 const robotDefaultRounds = AppConstants.defaultTotalRounds;
