@@ -5,14 +5,20 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/di/providers.dart';
+import '../../../core/routes/app_routes.dart';
 import '../../widgets/animated_living_background.dart';
 
-/// Settings: music, sound, vibration, language, about.
-class SettingsScreen extends ConsumerWidget {
+/// Settings screen with local toggles.
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  @override
+  Widget build(BuildContext context) {
     final store = ref.watch(playerProfileStoreProvider);
 
     return Scaffold(
@@ -36,7 +42,7 @@ class SettingsScreen extends ConsumerWidget {
                 value: store.musicEnabled,
                 onChanged: (v) async {
                   await store.setMusicEnabled(v);
-                  ref.invalidate(playerProfileStoreProvider);
+                  setState(() {});
                 },
               ),
               SwitchListTile(
@@ -44,8 +50,7 @@ class SettingsScreen extends ConsumerWidget {
                 value: store.soundEnabled,
                 onChanged: (v) async {
                   await store.setSoundEnabled(v);
-                  // Store is same instance — force rebuild via setState pattern:
-                  (context as Element).markNeedsBuild();
+                  setState(() {});
                 },
               ),
               SwitchListTile(
@@ -53,7 +58,7 @@ class SettingsScreen extends ConsumerWidget {
                 value: store.vibrationEnabled,
                 onChanged: (v) async {
                   await store.setVibrationEnabled(v);
-                  (context as Element).markNeedsBuild();
+                  setState(() {});
                 },
               ),
               SwitchListTile(
@@ -61,19 +66,22 @@ class SettingsScreen extends ConsumerWidget {
                 value: store.notificationsEnabled,
                 onChanged: (v) async {
                   await store.setNotificationsEnabled(v);
-                  (context as Element).markNeedsBuild();
+                  setState(() {});
                 },
               ),
               const Divider(color: Colors.white24),
               ListTile(
                 title: Text('Game Rules', style: AppTextStyles.bodyLarge()),
-                trailing: const Icon(Icons.chevron_right, color: Colors.white54),
-                onTap: () => context.push('/how-to-play'),
+                trailing:
+                    const Icon(Icons.chevron_right, color: Colors.white54),
+                onTap: () => context.push(AppRoutes.howToPlay),
               ),
               ListTile(
                 title: Text('About', style: AppTextStyles.bodyLarge()),
-                subtitle: Text('Chor Police Dakat Babu v1.0.0',
-                    style: AppTextStyles.caption()),
+                subtitle: Text(
+                  'Chor Police Dakat Babu v1.0.0',
+                  style: AppTextStyles.caption(),
+                ),
               ),
             ],
           ),
