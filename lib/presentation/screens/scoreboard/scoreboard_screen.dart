@@ -480,18 +480,14 @@ class ScoreboardScreen extends ConsumerWidget {
 
   String _getRoleEmoji(GameRole role) {
     switch (role) {
-      case GameRole.raja:
-        return '👑';
-      case GameRole.mantri:
-        return '📜';
       case GameRole.police:
         return '👮';
+      case GameRole.babu:
+        return '🎩';
       case GameRole.chor:
         return '🦹';
-      case GameRole.chintaykari:
+      case GameRole.dakat:
         return '🗡️';
-      case GameRole.batpar:
-        return '🎭';
     }
   }
 }

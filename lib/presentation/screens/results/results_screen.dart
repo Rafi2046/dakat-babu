@@ -667,26 +667,18 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
   int _calculateRoundPoints(PlayerModel player, RoundModel? round, RoomModel? room) {
     if (round == null) return 0;
     final isCorrect = round.isGuessCorrect ?? false;
+    final delta = room?.getPointsForRole(GameRole.police) ??
+        AppConstants.policeCorrectPoints;
 
-    final rajaPts = room?.getPointsForRole(GameRole.raja) ?? AppConstants.rajaPoints;
-    final mantriPts = room?.getPointsForRole(GameRole.mantri) ?? AppConstants.mantriPoints;
-    final policePts = isCorrect
-        ? (room?.getPointsForRole(GameRole.police) ?? AppConstants.policeCorrectPoints)
-        : AppConstants.policeWrongPoints;
-    final chorPts = isCorrect
-        ? AppConstants.chorCaughtPoints
-        : (room?.getPointsForRole(GameRole.chor) ?? AppConstants.chorSuccessPoints);
-    final chintaykariPts =
-        room?.getPointsForRole(GameRole.chintaykari) ?? AppConstants.chintaykariDefaultPoints;
-    final batparPts =
-        room?.getPointsForRole(GameRole.batpar) ?? AppConstants.batparDefaultPoints;
-
-    if (player.id == round.rajaPlayerId) return rajaPts;
-    if (player.id == round.mantriPlayerId) return mantriPts;
-    if (player.id == round.policePlayerId) return policePts;
-    if (player.id == round.chorPlayerId) return chorPts;
-    if (player.id == round.chintaykariPlayerId) return chintaykariPts;
-    if (player.id == round.batparPlayerId) return batparPts;
+    // +1 system: correct → Police; wrong → selected suspect.
+    if (isCorrect) {
+      if (player.id == round.policePlayerId) return delta;
+      return 0;
+    }
+    if (player.id == round.policeGuessPlayerId) {
+      return room?.getPointsForRole(GameRole.chor) ??
+          AppConstants.wrongGuessSuspectPoints;
+    }
     return 0;
   }
 }

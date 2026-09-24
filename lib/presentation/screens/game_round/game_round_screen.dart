@@ -69,7 +69,7 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
     final myPlayer = roundState.myPlayer(currentUserId);
     final myRole = myPlayer?.role;
     final isPolice = roundState.isPolice(currentUserId);
-    final isRaja = myRole == GameRole.raja;
+    final isBabu = myRole == GameRole.babu;
 
     // When round completes or police submits guess, route all players to results screen
     ref.listen<GameRoundState>(gameRoundViewModelProvider(widget.roomCode), (prev, current) {
@@ -208,7 +208,7 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
                     const SizedBox(height: 14),
 
                     // --- 2. Royal Proclamation Banner ---
-                    _buildRoyalProclamation(roundState, isRaja: isRaja),
+                    _buildPublicRolesBanner(roundState, isBabu: isBabu),
 
                     const SizedBox(height: 16),
 
