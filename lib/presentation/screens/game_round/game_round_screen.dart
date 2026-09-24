@@ -231,10 +231,9 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
     );
   }
 
-  /// Royal Proclamation Card declaring the Raja to everyone,
-  /// and showing Police identity to the Raja per game rules.
-  Widget _buildRoyalProclamation(GameRoundState state, {required bool isRaja}) {
-    final raja = state.rajaPlayer;
+  /// Public roles banner: Police + Babu are known to everyone.
+  Widget _buildPublicRolesBanner(GameRoundState state, {required bool isBabu}) {
+    final babu = state.babuPlayer;
     final police = state.policePlayer;
 
     return GameCard(
@@ -253,7 +252,7 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
               ),
               const SizedBox(width: 6),
               Text(
-                'ROYAL PROCLAMATION',
+                'PUBLIC ROLES',
                 style: AppTextStyles.caption(color: AppColors.raja).copyWith(
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.8,
@@ -264,14 +263,14 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
           ),
           const SizedBox(height: 8),
 
-          // Raja identity announced to all
+          // Babu identity announced to all
           Row(
             children: [
-              const RoleVectorIcon(role: GameRole.raja, size: 20, hasGlow: false),
+              const RoleVectorIcon(role: GameRole.babu, size: 20, hasGlow: false),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '👑 Raja: ${raja?.name ?? 'Declaring...'} (Sovereign)',
+                  '🎩 Babu: ${babu?.name ?? 'Declaring...'} (public)',
                   style: AppTextStyles.bodyMedium(color: AppColors.raja).copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -280,8 +279,8 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
             ],
           ),
 
-          // If current user is Raja, they also see who the Police is
-          if (isRaja && police != null) ...[
+          // Police is also public
+          if (police != null) ...[
             const SizedBox(height: 6),
             Row(
               children: [
@@ -289,7 +288,7 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '👮 Your Inspector: ${police.name} (Investigating)',
+                    '👮 Police: ${police.name}${isBabu ? ' (investigating)' : ''}',
                     style: AppTextStyles.bodyMedium(color: AppColors.police).copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -309,7 +308,7 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
     GameRoundState state,
     String? currentUserId,
   ) {
-    // Show the other players in the room (suspect pool + Raja who is unselectable)
+    // Suspects = everyone except Police (Babu is public but selectable).
     final otherPlayers = state.players.where((p) => p.id != currentUserId).toList();
     final selectedSuspect = otherPlayers.cast<PlayerModel?>().firstWhere(
           (p) => p?.id == state.selectedSuspectId,
@@ -458,34 +457,30 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
             ),
             itemBuilder: (context, index) {
               final player = otherPlayers[index];
-              final isRaja = player.id == state.round?.rajaPlayerId;
+              final isBabu = player.id == state.round?.babuPlayerId;
               final isSelected = state.selectedSuspectId == player.id;
               final tilt = tiltAngles[index % tiltAngles.length];
 
               return _buildSuspectCaseBoardCard(
                 player: player,
-                isRaja: isRaja,
+                isBabu: isBabu,
                 isSelected: isSelected,
                 tiltAngle: tilt,
-                onTap: isRaja
-                    ? null
-                    : () {
-                        HapticFeedback.mediumImpact();
-                        ref
-                            .read(gameRoundViewModelProvider(widget.roomCode).notifier)
-                            .selectSuspect(player.id);
-                      },
-                onSwipeUp: isRaja
-                    ? null
-                    : () async {
-                        HapticFeedback.mediumImpact();
-                        ref
-                            .read(gameRoundViewModelProvider(widget.roomCode).notifier)
-                            .selectSuspect(player.id);
-                        await ref
-                            .read(gameRoundViewModelProvider(widget.roomCode).notifier)
-                            .submitGuess();
-                      },
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  ref
+                      .read(gameRoundViewModelProvider(widget.roomCode).notifier)
+                      .selectSuspect(player.id);
+                },
+                onSwipeUp: () async {
+                  HapticFeedback.mediumImpact();
+                  ref
+                      .read(gameRoundViewModelProvider(widget.roomCode).notifier)
+                      .selectSuspect(player.id);
+                  await ref
+                      .read(gameRoundViewModelProvider(widget.roomCode).notifier)
+                      .submitGuess();
+                },
               );
             },
           ),
@@ -522,7 +517,7 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
   /// dashed connection, and swipe-to-accuse gesture.
   Widget _buildSuspectCaseBoardCard({
     required PlayerModel player,
-    required bool isRaja,
+    required bool isBabu,
     required bool isSelected,
     required double tiltAngle,
     required VoidCallback? onTap,
@@ -531,12 +526,12 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
     Color borderColor;
     Color bgColor;
 
-    if (isRaja) {
-      borderColor = AppColors.raja.withValues(alpha: 0.3);
-      bgColor = const Color(0x28000000);
-    } else if (isSelected) {
+    if (isSelected) {
       borderColor = AppColors.error;
       bgColor = AppColors.error.withValues(alpha: 0.18);
+    } else if (isBabu) {
+      borderColor = AppColors.raja.withValues(alpha: 0.35);
+      bgColor = AppColors.raja.withValues(alpha: 0.08);
     } else {
       borderColor = Colors.white.withValues(alpha: 0.14);
       bgColor = const Color(0x38181D2A);
@@ -597,15 +592,15 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
                     ),
                     child: CircleAvatar(
                       radius: 19,
-                      backgroundColor: isRaja
-                          ? AppColors.raja.withValues(alpha: 0.25)
-                          : (isSelected
-                              ? AppColors.error.withValues(alpha: 0.3)
+                      backgroundColor: isSelected
+                          ? AppColors.error.withValues(alpha: 0.3)
+                          : (isBabu
+                              ? AppColors.raja.withValues(alpha: 0.25)
                               : AppColors.primary.withValues(alpha: 0.2)),
                       child: Text(
                         player.name.initials,
                         style: AppTextStyles.bodyMedium(
-                          color: isRaja ? AppColors.raja : Colors.white,
+                          color: isBabu && !isSelected ? AppColors.raja : Colors.white,
                         ).copyWith(fontWeight: FontWeight.w800, fontSize: 12),
                       ),
                     ),
@@ -628,23 +623,7 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
                   const SizedBox(height: 3),
 
                   // Role Status / Accuse Indicator
-                  if (isRaja)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.raja.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '👑 King (Immune)',
-                        style: AppTextStyles.caption(color: AppColors.raja).copyWith(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 8.5,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    )
-                  else if (isSelected)
+                  if (isSelected)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                       decoration: BoxDecoration(
@@ -668,6 +647,22 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
                             ),
                           ),
                         ],
+                      ),
+                    )
+                  else if (isBabu)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.raja.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'Babu',
+                        style: AppTextStyles.caption(color: AppColors.raja).copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 8.5,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     )
                   else
@@ -717,14 +712,14 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
 
     String advice;
     switch (role) {
-      case GameRole.mantri:
-        advice = 'You are the Minister! Look calm & innocent so the Police doesn\'t falsely accuse you.';
+      case GameRole.babu:
+        advice = 'You are Babu! Your identity is public — stay calm while Police investigates.';
         break;
       case GameRole.chor:
-        advice = 'You are the Thief! Maintain a poker face. If Police suspects the Minister, you steal 500 points!';
+        advice = 'You are the Chor! Keep a poker face. Police must catch you to score.';
         break;
-      case GameRole.raja:
-        advice = 'You are the King! Observe your court silently as your Inspector investigates.';
+      case GameRole.dakat:
+        advice = 'You are Dakat — a decoy. Confuse the Police so they pick the wrong suspect.';
         break;
       default:
         advice = 'Maintain your poker face and wait for the Police to announce the verdict.';

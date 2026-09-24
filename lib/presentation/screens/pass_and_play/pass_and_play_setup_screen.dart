@@ -29,13 +29,13 @@ class _PassAndPlaySetupScreenState
 
   late final List<TextEditingController> _nameControllers;
   int _selectedRounds = 5;
-  int _playerCount = 4;
+  static const int _playerCount = 4;
 
   @override
   void initState() {
     super.initState();
     _nameControllers = List.generate(
-      6,
+      _playerCount,
       (i) => TextEditingController(text: 'Player ${i + 1}'),
     );
   }
@@ -135,104 +135,24 @@ class _PassAndPlaySetupScreenState
 
                   const SizedBox(height: 18),
 
-                  // Player Count Selector
+                  // Fixed player count (CPDB = exactly 4)
                   GameCard(
                     isGlass: true,
                     borderColor: Colors.white.withValues(alpha: 0.1),
                     padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Row(
-                          children: [
-                            Icon(
-                              PhosphorIcons.users(PhosphorIconsStyle.fill),
-                              color: AppColors.accent,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'খেলোয়াড়ের সংখ্যা (Player Count)',
-                                style: AppTextStyles.heading3().copyWith(fontSize: 15),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+                        Icon(
+                          PhosphorIcons.usersFour(PhosphorIconsStyle.fill),
+                          color: AppColors.accent,
+                          size: 20,
                         ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [4, 5, 6].map((count) {
-                            final isSelected = _playerCount == count;
-                            return Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 3),
-                                child: GestureDetector(
-                                  onTap: () => setState(() => _playerCount = count),
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 10,
-                                      horizontal: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? AppColors.primary.withValues(alpha: 0.25)
-                                          : Colors.white.withValues(alpha: 0.05),
-                                      borderRadius: BorderRadius.circular(AppRadius.md),
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? AppColors.primary
-                                            : Colors.white.withValues(alpha: 0.1),
-                                        width: isSelected ? 1.5 : 1.0,
-                                      ),
-                                    ),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: Text(
-                                            '$count Players',
-                                            style: AppTextStyles.bodyMedium(
-                                              color: isSelected
-                                                  ? AppColors.primaryLight
-                                                  : AppColors.textLightSecondary,
-                                            ).copyWith(
-                                              fontWeight: isSelected
-                                                  ? FontWeight.bold
-                                                  : FontWeight.w500,
-                                              fontSize: 12.5,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: Text(
-                                            count == 4
-                                                ? 'Classic'
-                                                : (count == 5 ? '+Chintaykari' : '+Batpar'),
-                                            style: AppTextStyles.caption(
-                                              color: isSelected
-                                                  ? (count == 5
-                                                      ? AppColors.chintaykari
-                                                      : (count == 6
-                                                          ? AppColors.batpar
-                                                          : AppColors.primaryLight))
-                                                  : AppColors.textLightSecondary
-                                                      .withValues(alpha: 0.6),
-                                            ).copyWith(fontSize: 10),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'ঠিক ৪ জন খেলোয়াড় (Police, Babu, Chor, Dakat)',
+                            style: AppTextStyles.heading3().copyWith(fontSize: 15),
+                          ),
                         ),
                       ],
                     ),

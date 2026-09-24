@@ -107,6 +107,8 @@ class _PassAndPlayGameScreenState
         return _buildHandToPoliceView(state, notifier);
       case PassAndPlayStage.policeAccusing:
         return _buildPoliceAccusingView(state, notifier);
+      case PassAndPlayStage.confirmSuspect:
+        return _buildConfirmSuspectView(state, notifier);
       case PassAndPlayStage.roundResults:
         return _buildRoundResultsView(state, notifier);
       case PassAndPlayStage.matchOver:
@@ -238,7 +240,7 @@ class _PassAndPlayGameScreenState
   ) {
     final currentPlayer = state.currentPeekingPlayer;
     final isPolice = currentPlayer?.role == GameRole.police;
-    final isRaja = currentPlayer?.role == GameRole.raja;
+    final isBabu = currentPlayer?.role == GameRole.babu;
     final isRevealed = state.isCardRevealed;
     final isLastPlayer = state.currentPeekIndex == state.players.length - 1;
     final nextIndex = state.currentPeekIndex + 1;
@@ -353,7 +355,7 @@ class _PassAndPlayGameScreenState
                 );
               },
             )
-          else if (isRevealed && isRaja)
+          else if (isRevealed && isBabu)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
@@ -379,7 +381,7 @@ class _PassAndPlayGameScreenState
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '👑 আপনি রাজা (RAJA)!',
+                        '🎩 আপনি বাবু (BABU)!',
                         style: AppTextStyles.heading2(color: AppColors.raja)
                             .copyWith(fontSize: 18, fontWeight: FontWeight.w900),
                       ),
@@ -387,7 +389,7 @@ class _PassAndPlayGameScreenState
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'সবাইকে ঘোষণা দিন: "আমি রাজা!" আপনার ১০০০ পয়েন্ট নিশ্চিত।',
+                    'সবাইকে ঘোষণা দিন: "আমি বাবু!" আপনার পরিচয় সবার কাছে প্রকাশ্য।',
                     style: AppTextStyles.bodyMedium(color: Colors.white70)
                         .copyWith(fontSize: 13),
                     textAlign: TextAlign.center,
@@ -549,7 +551,7 @@ class _PassAndPlayGameScreenState
     PassAndPlayViewModel notifier,
   ) {
     final police = state.policePlayer;
-    final raja = state.rajaPlayer;
+    final babu = state.babuPlayer;
     final suspects = state.suspects;
 
     return SingleChildScrollView(
@@ -595,8 +597,8 @@ class _PassAndPlayGameScreenState
           ),
           const SizedBox(height: 14),
 
-          // Raja Immune Notice
-          if (raja != null)
+          // Babu is publicly known (still a suspect)
+          if (babu != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
@@ -616,7 +618,7 @@ class _PassAndPlayGameScreenState
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      '👑 ${raja.name} রাজা (ইনি নিরাপদ, কাউকে গ্রেপ্তার করতে পারবেন না)',
+                      '🎩 ${babu.name} বাবু (প্রকাশ্য রোল — তবুও সন্দেহভাজন)',
                       style: AppTextStyles.caption(color: AppColors.raja),
                     ),
                   ),
@@ -626,7 +628,7 @@ class _PassAndPlayGameScreenState
           const SizedBox(height: 18),
 
           Text(
-            'সন্দেহভাজন ২ জনের মধ্যে ডাকাত কে?',
+            '৩ সন্দেহভাজনের মধ্যে চোর কে?',
             style: AppTextStyles.heading2().copyWith(fontSize: 18),
             textAlign: TextAlign.center,
           ),
@@ -640,15 +642,18 @@ class _PassAndPlayGameScreenState
 
           // Suspects Choice Cards
           ...suspects.map((suspect) {
+            final isBabuSuspect = babu?.id == suspect.id;
             return Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: InkWell(
-                onTap: () => _confirmAccusationDialog(context, suspect, notifier),
+                onTap: () => notifier.selectSuspect(suspect.id),
                 borderRadius: AppRadius.cardRadius,
                 child: GameCard(
                   isGlass: true,
-                  borderColor: AppColors.chor.withValues(alpha: 0.35),
-                  glowColor: AppColors.chorGlow,
+                  borderColor: isBabuSuspect
+                      ? AppColors.raja.withValues(alpha: 0.45)
+                      : AppColors.chor.withValues(alpha: 0.35),
+                  glowColor: isBabuSuspect ? AppColors.rajaGlow : AppColors.chorGlow,
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                   child: Row(
                     children: [
@@ -657,14 +662,16 @@ class _PassAndPlayGameScreenState
                         height: 48,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.chor.withValues(alpha: 0.2),
+                          color: (isBabuSuspect ? AppColors.raja : AppColors.chor)
+                              .withValues(alpha: 0.2),
                           border: Border.all(
-                            color: AppColors.chor.withValues(alpha: 0.4),
+                            color: (isBabuSuspect ? AppColors.raja : AppColors.chor)
+                                .withValues(alpha: 0.4),
                           ),
                         ),
                         child: Icon(
                           PhosphorIcons.user(PhosphorIconsStyle.fill),
-                          color: AppColors.chor,
+                          color: isBabuSuspect ? AppColors.raja : AppColors.chor,
                           size: 24,
                         ),
                       ),
@@ -678,7 +685,9 @@ class _PassAndPlayGameScreenState
                               style: AppTextStyles.heading2().copyWith(fontSize: 18),
                             ),
                             Text(
-                              'সন্দেহভাজন (মন্ত্রী অথবা ডাকাত)',
+                              isBabuSuspect
+                                  ? 'বাবু (প্রকাশ্য) — সন্দেহভাজন'
+                                  : 'সন্দেহভাজন (চোর বা ডাকাত)',
                               style: AppTextStyles.caption(color: Colors.white70),
                             ),
                           ],
@@ -710,39 +719,53 @@ class _PassAndPlayGameScreenState
     );
   }
 
-  void _confirmAccusationDialog(
-    BuildContext context,
-    PassAndPlayPlayer suspect,
+  Widget _buildConfirmSuspectView(
+    PassAndPlayState state,
     PassAndPlayViewModel notifier,
   ) {
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: AppColors.backgroundDark,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.cardRadius,
-          side: const BorderSide(color: AppColors.police, width: 1.5),
-        ),
-        title: Text('নিশ্চিত করুন', style: AppTextStyles.heading2()),
-        content: Text(
-          'আপনি কি নিশ্চিত যে "${suspect.name}"-ই আসল ডাকাত?',
-          style: AppTextStyles.bodyMedium(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: Text('না, বাতিল', style: AppTextStyles.bodyMedium(color: Colors.white54)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.police,
-              foregroundColor: Colors.white,
+    final accused = state.accusedPlayer;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          GameCard(
+            isGlass: true,
+            borderColor: AppColors.police.withValues(alpha: 0.45),
+            glowColor: AppColors.policeGlow,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: Column(
+              children: [
+                Icon(
+                  PhosphorIcons.shieldWarning(PhosphorIconsStyle.fill),
+                  color: AppColors.police,
+                  size: 40,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'নিশ্চিত করুন',
+                  style: AppTextStyles.heading2().copyWith(fontSize: 20),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'আপনি কি নিশ্চিত যে "${accused?.name ?? 'এই সন্দেহভাজন'}"-ই আসল চোর?',
+                  style: AppTextStyles.bodyMedium(color: Colors.white70),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-            onPressed: () {
-              Navigator.pop(dialogCtx);
-              notifier.makeAccusation(suspect.id);
-            },
-            child: const Text('হ্যাঁ, গ্রেপ্তার করুন!'),
+          ),
+          const SizedBox(height: 20),
+          CustomButton(
+            label: 'হ্যাঁ, গ্রেপ্তার করুন!',
+            variant: ButtonVariant.primary,
+            onPressed: notifier.confirmAccusation,
+          ),
+          const SizedBox(height: 10),
+          CustomButton(
+            label: 'না, বাতিল',
+            variant: ButtonVariant.secondary,
+            onPressed: notifier.cancelSuspect,
           ),
         ],
       ),

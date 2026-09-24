@@ -34,8 +34,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // 0: Create Room, 1: Join Room
   int _selectedTabIndex = 0;
 
-  // Customization settings for room creation
-  int _selectedPlayerCount = 4;
+  // Customization settings for room creation (CPDB locked to 4 players)
+  final int _selectedPlayerCount = 4;
   RolePresetModel _selectedPreset = RolePresetModel.classic;
   bool _showCustomSettings = false;
 
@@ -212,7 +212,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ],
             ),
             child: const RoleVectorIcon(
-              role: GameRole.raja,
+              role: GameRole.babu,
               size: 36,
               hasGlow: false,
             ),
@@ -239,7 +239,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             const SizedBox(width: 6),
             Text(
-              'CHOR • POLICE • RAJA • MANTRI',
+              'CHOR • POLICE • DAKAT • BABU',
               style: AppTextStyles.caption(
                 color: AppColors.textLightSecondary,
               ).copyWith(
@@ -488,15 +488,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildCreateRoomForm(HomeState state) {
-    // Determine which roles are active based on selected player count
-    final activeRoles = [
-      GameRole.raja,
-      GameRole.mantri,
-      GameRole.police,
-      GameRole.chor,
-      if (_selectedPlayerCount >= 5) GameRole.chintaykari,
-      if (_selectedPlayerCount >= 6) GameRole.batpar,
-    ];
+    final activeRoles = GameRole.values;
 
     return Form(
       key: _createFormKey,
@@ -546,9 +538,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
           const SizedBox(height: 14),
 
-          // 1. Player Count Selector (4, 5, or 6)
+          // Fixed player count (CPDB = exactly 4)
           Text(
-            'NUMBER OF PLAYERS',
+            'PLAYERS',
             style: AppTextStyles.caption(color: AppColors.textLightSecondary).copyWith(
               fontWeight: FontWeight.bold,
               letterSpacing: 0.8,
@@ -556,66 +548,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           const SizedBox(height: 6),
-          Row(
-            children: [4, 5, 6].map((count) {
-              final isSelected = _selectedPlayerCount == count;
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 3),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(10),
-                    onTap: () => setState(() => _selectedPlayerCount = count),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.primary.withValues(alpha: 0.35)
-                            : Colors.white.withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppColors.primaryLight
-                              : Colors.white.withValues(alpha: 0.12),
-                          width: isSelected ? 1.5 : 1.0,
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '$count Players',
-                            style: AppTextStyles.bodyMedium().copyWith(
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                              color: isSelected ? Colors.white : AppColors.textLightSecondary,
-                              fontSize: 12.5,
-                            ),
-                          ),
-                          if (count == 5)
-                            Text(
-                              '+Chintaykari',
-                              style: AppTextStyles.caption(color: AppColors.chintaykari)
-                                  .copyWith(fontSize: 9),
-                            )
-                          else if (count == 6)
-                            Text(
-                              '+Batpar',
-                              style: AppTextStyles.caption(color: AppColors.batpar)
-                                  .copyWith(fontSize: 9),
-                            )
-                          else
-                            Text(
-                              'Classic',
-                              style: AppTextStyles.caption(color: AppColors.textLightMuted)
-                                  .copyWith(fontSize: 9),
-                            ),
-                        ],
-                      ),
-                    ),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.25),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.primaryLight, width: 1.5),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  PhosphorIcons.usersFour(PhosphorIconsStyle.fill),
+                  color: AppColors.primaryLight,
+                  size: 18,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Exactly 4 players (Police, Babu, Chor, Dakat)',
+                  style: AppTextStyles.bodyMedium().copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12.5,
                   ),
                 ),
-              );
-            }).toList(),
+              ],
+            ),
           ),
 
           const SizedBox(height: 14),
@@ -972,13 +928,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  /// Compact 2x2 grid layout for royal roles.
+  /// Compact 2x2 grid layout for CPDB roles.
   Widget _buildStaggeredRoleCards() {
     const roles = [
-      GameRole.raja,
-      GameRole.mantri,
       GameRole.police,
+      GameRole.babu,
       GameRole.chor,
+      GameRole.dakat,
     ];
 
     return GridView.count(
