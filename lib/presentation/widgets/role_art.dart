@@ -64,3 +64,29 @@ class RolePortrait extends StatelessWidget {
     );
   }
 }
+
+/// Subtle decorative watermark for role cards.
+class RolePatternPainter extends CustomPainter {
+  final GameRole role;
+
+  RolePatternPainter({required this.role});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = role.color.withValues(alpha: 0.08)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+
+    final step = size.shortestSide / 4;
+    for (var x = -step; x < size.width + step; x += step) {
+      for (var y = -step; y < size.height + step; y += step) {
+        canvas.drawCircle(Offset(x, y), step * 0.35, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant RolePatternPainter oldDelegate) =>
+      oldDelegate.role != role;
+}

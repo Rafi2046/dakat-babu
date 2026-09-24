@@ -124,18 +124,14 @@ class RoleShowcaseCard extends StatelessWidget {
 
   String _getSubtitle(GameRole role) {
     switch (role) {
-      case GameRole.raja:
-        return 'Declares court & glory';
-      case GameRole.mantri:
-        return 'Secret court advisor';
       case GameRole.police:
-        return 'Finds & catches thief';
+        return 'Find the Chor';
+      case GameRole.babu:
+        return 'Public wealth, still suspect';
       case GameRole.chor:
-        return 'Escapes & steals points';
-      case GameRole.chintaykari:
-        return 'Swift snatcher in shadows';
-      case GameRole.batpar:
-        return 'Cunning swindler of the court';
+        return 'Hide — Police hunts you';
+      case GameRole.dakat:
+        return 'Hidden decoy, confuse Police';
     }
   }
 }
