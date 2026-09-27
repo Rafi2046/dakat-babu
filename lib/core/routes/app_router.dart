@@ -15,6 +15,7 @@ import '../../presentation/screens/pass_and_play/pass_and_play_game_screen.dart'
 import '../../presentation/screens/pass_and_play/pass_and_play_setup_screen.dart';
 import '../../presentation/screens/results/results_screen.dart';
 import '../../presentation/screens/robot/robot_screen.dart';
+import '../../presentation/screens/robot/single_player_screen.dart';
 import '../../presentation/screens/scoreboard/personal_score_screen.dart';
 import '../../presentation/screens/scoreboard/scoreboard_screen.dart';
 import '../../presentation/screens/settings/settings_screen.dart';
@@ -73,6 +74,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const RobotScreen(),
       ),
       GoRoute(
+        path: AppRoutes.singlePlayer,
+        name: AppRoutes.singlePlayerName,
+        builder: (context, state) {
+          final extra = state.extra;
+          var name = 'You';
+          if (extra is Map && extra['humanName'] is String) {
+            name = extra['humanName'] as String;
+          }
+          return SinglePlayerScreen(humanName: name);
+        },
+      ),
+      GoRoute(
         path: AppRoutes.connectionError,
         name: AppRoutes.connectionErrorName,
         builder: (context, state) => const ConnectionErrorScreen(),
@@ -91,6 +104,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.lobbyWaiting,
         name: AppRoutes.lobbyWaitingName,
         builder: (context, state) => const LobbyWaitingScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.lobbyWaitingRoom,
+        name: '${AppRoutes.lobbyWaitingName}Room',
+        builder: (context, state) {
+          final roomCode =
+              state.pathParameters[AppRoutes.paramRoomCode] ?? '';
+          return LobbyWaitingScreen(roomCode: roomCode);
+        },
       ),
       GoRoute(
         path: AppRoutes.lobby,
