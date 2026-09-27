@@ -246,18 +246,17 @@ class _MysterySlot extends StatelessWidget {
     return Opacity(
       opacity: dimmed ? 0.35 : 1,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: locked ? null : onTap,
-        child: IgnorePointer(
-          // Parent owns taps; card only animates via [isRevealed].
-          child: Tactile3DFlipCard(
-            key: ValueKey('mystery_$index'),
-            width: width,
-            height: height,
-            role: revealedRole,
-            isRevealed: isRevealed,
-            playFlipSound: false,
-            backFace: _MysteryBack(index: index),
-          ),
+        child: Tactile3DFlipCard(
+          key: ValueKey('mystery_$index'),
+          width: width,
+          height: height,
+          role: revealedRole,
+          isRevealed: isRevealed,
+          playFlipSound: false,
+          enableTap: false,
+          backFace: _MysteryBack(index: index),
         ),
       ),
     );
