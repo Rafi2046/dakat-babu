@@ -14,7 +14,7 @@ class HowToPlayScreen extends StatelessWidget {
     ('3. Reveal', 'Pass the phone — each player peeks their role.'),
     ('4. Identify', 'Everyone sees Police & Babu. Chor/Dakat stay hidden.'),
     ('5. Guess', 'Police picks a suspect — only Chor is correct.'),
-    ('6. Score', 'Correct: Police +1. Wrong: suspect +1. Next round!'),
+    ('6. Score', 'Babu 900 · Police 800 (catch) · Dakat 600 · Chor 400 (escape)'),
   ];
 
   @override

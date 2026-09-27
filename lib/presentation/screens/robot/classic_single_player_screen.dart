@@ -450,7 +450,7 @@ class _LiveScoreboard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Police +1 · Wrong → suspect +1',
+                      'Babu 900 · Police 800 · Dakat 600 · Chor 400',
                       textAlign: TextAlign.right,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

@@ -300,8 +300,8 @@ class PassAndPlayGameScreen extends ConsumerWidget {
                     ? 'Police found the Chor!'
                     : 'তুমি ভুলজনকে ধরেছো!',
                 scoreLabel: correct
-                    ? 'Police +1'
-                    : '${state.accusedPlayer?.name ?? 'Suspect'} +1',
+                    ? 'Police +800 · Babu +900 · Dakat +600'
+                    : 'Chor +400 · Babu +900 · Dakat +600',
                 characterAsset: correct
                     ? AppImages.policeStanding
                     : AppImages.chorStanding,
