@@ -255,4 +255,76 @@ abstract final class AppColors {
   static const Color homePassPlayDeep = Color(0xFF7D3C98);
   static const Color homeFeatured = Color(0xFF2F80ED);
   static const Color homeFeaturedDeep = Color(0xFF1A5276);
+
+  // --- Light-mode tactile / emboss tokens (soft color shadows, not neon) ---
+  /// Soft primary drop shadow for light embossed cards.
+  static const Color lightEmbossPrimary = Color(0x336C5CE7);
+
+  /// Soft secondary (teal) drop shadow for light mode accents.
+  static const Color lightEmbossSecondary = Color(0x3300CEC9);
+
+  /// Soft amber accent shadow for light mode CTAs.
+  static const Color lightEmbossAccent = Color(0x33FFD166);
+
+  /// Light glass / frosted panel fill.
+  static const Color glassFillLight = Color(0xE6FFFFFF);
+
+  /// Light glass hairline border.
+  static const Color glassBorderLight = Color(0x33FFFFFF);
+
+  /// Light ambient background gradient (soft sky → cream).
+  static const LinearGradient lightBackgroundGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFFEEF2FF),
+      Color(0xFFF7F8FA),
+      Color(0xFFFFF8F0),
+    ],
+    stops: [0.0, 0.55, 1.0],
+  );
+
+  /// Embossed panel face for light mode (slightly lifted white).
+  static const Color embossFaceLight = Color(0xFFFFFFFF);
+
+  /// Embossed panel recessed well for light mode.
+  static const Color embossWellLight = Color(0xFFF0F2F6);
+
+  /// Soft colorful glow for light mode (maps dark neon → pastel drop).
+  static List<BoxShadow> lightSoftGlow(Color accent, {double alpha = 0.28}) => [
+        BoxShadow(
+          color: accent.withValues(alpha: alpha),
+          blurRadius: 18,
+          offset: const Offset(0, 8),
+          spreadRadius: -2,
+        ),
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.06),
+          blurRadius: 6,
+          offset: const Offset(0, 2),
+        ),
+      ];
+
+  /// Dark neon glow (existing look).
+  static List<BoxShadow> darkNeonGlow(Color accent, {double alpha = 0.45}) => [
+        BoxShadow(
+          color: accent.withValues(alpha: alpha),
+          blurRadius: 20,
+          spreadRadius: 1,
+        ),
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.55),
+          blurRadius: 12,
+          offset: const Offset(0, 6),
+        ),
+      ];
+
+  /// Theme-aware glow: neon in dark, soft colorful drop in light.
+  static List<BoxShadow> tactileGlow(
+    Brightness brightness,
+    Color accent,
+  ) =>
+      brightness == Brightness.dark
+          ? darkNeonGlow(accent)
+          : lightSoftGlow(accent);
 }
