@@ -43,12 +43,21 @@ abstract final class AppConstants {
   /// Maximum attempts to generate a collision-free room code.
   static const int maxRoomCodeRetries = 5;
 
-  // --- Scoring (locked 1A: +1 system) ---
-  /// Points awarded on a correct Police catch (Chor).
-  static const int policeCorrectPoints = 1;
+  // --- Scoring (classic childhood points) ---
+  /// Babu always scores this per round.
+  static const int babuPoints = 900;
 
-  /// Points awarded to the selected suspect on a wrong guess.
-  static const int wrongGuessSuspectPoints = 1;
+  /// Police scores this when correctly catching Chor.
+  static const int policeCorrectPoints = 800;
+
+  /// Dakat scores this when Chor is not caught (and when correct catch).
+  static const int dakatPoints = 600;
+
+  /// Chor scores this when Police misses.
+  static const int chorEscapePoints = 400;
+
+  /// @Deprecated — use [chorEscapePoints] / role-specific constants.
+  static const int wrongGuessSuspectPoints = chorEscapePoints;
 
   /// Deep link scheme for QR join.
   static const String joinDeepLinkScheme = 'dakatbabu';

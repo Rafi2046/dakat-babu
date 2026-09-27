@@ -122,8 +122,19 @@ class GuessResult {
   final String policePlayerId;
   final String suspectPlayerId;
   final String chorPlayerId;
+  final String babuPlayerId;
+  final String dakatPlayerId;
+
+  /// Narrative “winner” for headlines (Police on catch, Chor on escape).
   final String? scoreRecipientId;
+
+  /// Headline delta for that recipient (800 or 400).
   final int scoreDelta;
+
+  /// Points earned **this round** per player id (classic distribution).
+  final Map<String, int> roundDeltas;
+
+  /// Cumulative scores after applying [roundDeltas].
   final Map<String, int> scoresAfter;
 
   const GuessResult({
@@ -131,8 +142,13 @@ class GuessResult {
     required this.policePlayerId,
     required this.suspectPlayerId,
     required this.chorPlayerId,
+    required this.babuPlayerId,
+    required this.dakatPlayerId,
     required this.scoreRecipientId,
     required this.scoreDelta,
+    required this.roundDeltas,
     required this.scoresAfter,
   });
+
+  int deltaFor(String playerId) => roundDeltas[playerId] ?? 0;
 }
