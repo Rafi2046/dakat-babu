@@ -39,6 +39,8 @@ enum AudioEvent {
   scoreIncrement,
   coinReward,
   roundComplete,
+  successSting,
+  failureSting,
 
   // Final
   victorySting,

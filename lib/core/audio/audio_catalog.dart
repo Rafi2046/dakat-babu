@@ -60,6 +60,8 @@ abstract final class AudioCatalog {
     AudioEvent.scoreIncrement: '$_result/score_increment.wav',
     AudioEvent.coinReward: '$_result/coin_reward.wav',
     AudioEvent.roundComplete: '$_result/round_complete.wav',
+    AudioEvent.successSting: '$_result/success_sting.wav',
+    AudioEvent.failureSting: '$_result/failure_sting.wav',
 
     // Final
     AudioEvent.victorySting: '$_final/victory_sting.wav',
@@ -100,6 +102,8 @@ abstract final class AudioCatalog {
     AudioEvent.scoreIncrement: placeholderSuccess,
     AudioEvent.coinReward: placeholderSuccess,
     AudioEvent.roundComplete: placeholderSting,
+    AudioEvent.successSting: placeholderSuccess,
+    AudioEvent.failureSting: placeholderFailure,
     AudioEvent.victorySting: placeholderSuccess,
     AudioEvent.defeatSting: placeholderFailure,
     AudioEvent.trophyReveal: placeholderSuccess,
