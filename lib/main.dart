@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/constants/app_constants.dart';
@@ -13,6 +14,14 @@ import 'data/services/supabase_service.dart';
 /// Entry point for Chor Police Dakat Babu.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Warm Bangla font so Home does not flash fallback glyphs on cold start.
+  GoogleFonts.notoSansBengali();
+  GoogleFonts.notoSansBengali(fontWeight: FontWeight.w500);
+  GoogleFonts.notoSansBengali(fontWeight: FontWeight.w600);
+  GoogleFonts.notoSansBengali(fontWeight: FontWeight.w700);
+  GoogleFonts.notoSansBengali(fontWeight: FontWeight.w800);
+  await GoogleFonts.pendingFonts();
 
   final prefs = await SharedPreferences.getInstance();
   final profileStore = PlayerProfileStore(prefs);
