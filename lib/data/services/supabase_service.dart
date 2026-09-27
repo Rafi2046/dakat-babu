@@ -300,6 +300,45 @@ class SupabaseService {
     }
   }
 
+  /// Invokes Edge Function `start-round` to assign roles server-side.
+  ///
+  /// Body: `{ room_code, round_number }`. Updates room status to `in_progress`.
+  Future<Map<String, dynamic>> invokeStartRound({
+    required String roomCode,
+    int roundNumber = 1,
+  }) async {
+    if (!_isConfigured || _client == null) {
+      throw const AppException(
+        'Supabase is not configured — cannot invoke start-round',
+      );
+    }
+
+    try {
+      final response = await _client!.functions.invoke(
+        'start-round',
+        body: {
+          'room_code': roomCode.trim().toUpperCase(),
+          'round_number': roundNumber,
+        },
+      );
+
+      if (response.status >= 400) {
+        final err = response.data;
+        throw ServerFailure(
+          'start-round failed (${response.status}): $err',
+        );
+      }
+
+      final data = response.data;
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return {'ok': true, 'raw': data};
+    } catch (e) {
+      if (e is Failure) rethrow;
+      throw ServerFailure('start-round invoke failed: $e');
+    }
+  }
+
   // --- Private Mock Implementation Helpers ---
   Map<String, dynamic> _mockInsert(String table, Map<String, dynamic> values) {
     final record = Map<String, dynamic>.from(values);
