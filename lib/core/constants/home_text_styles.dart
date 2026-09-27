@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 
-/// Home-scoped Bangla typography (Noto Sans Bengali).
+/// Home-scoped Bangla typography using bundled [NotoSansBengali] assets.
 abstract final class HomeTextStyles {
+  static const String fontFamily = 'NotoSansBengali';
+
   static TextStyle _base({
     required double fontSize,
     required FontWeight fontWeight,
@@ -12,7 +13,8 @@ abstract final class HomeTextStyles {
     double height = 1.3,
     double letterSpacing = 0,
   }) =>
-      GoogleFonts.notoSansBengali(
+      TextStyle(
+        fontFamily: fontFamily,
         fontSize: fontSize,
         fontWeight: fontWeight,
         height: height,

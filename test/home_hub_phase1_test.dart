@@ -14,14 +14,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('HomeTextStyles declare Noto Sans Bengali family', () {
-    final family = HomeTextStyles.title().fontFamily ?? '';
-    expect(
-      family.toLowerCase().contains('noto') &&
-          family.toLowerCase().contains('bengali'),
-      isTrue,
-      reason: 'Expected Noto Sans Bengali, got: $family',
-    );
+  test('HomeTextStyles use bundled NotoSansBengali family', () {
+    expect(HomeTextStyles.fontFamily, 'NotoSansBengali');
+    expect(HomeTextStyles.title().fontFamily, 'NotoSansBengali');
+    expect(HomeTextStyles.title().fontWeight, FontWeight.w700);
+    expect(HomeTextStyles.hero().fontWeight, FontWeight.w800);
+    expect(HomeTextStyles.body().fontWeight, FontWeight.w600);
+    expect(HomeTextStyles.caption().fontWeight, FontWeight.w500);
   });
 
   group('HomeScreen Phase 1', () {
