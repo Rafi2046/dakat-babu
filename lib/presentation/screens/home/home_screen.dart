@@ -16,6 +16,7 @@ import '../../widgets/home/home_daily_gift_banner.dart';
 import '../../widgets/home/home_featured_game_card.dart';
 import '../../widgets/home/home_mode_card.dart';
 import '../../widgets/home/home_profile_header.dart';
+import '../../widgets/settings/settings_bottom_sheet.dart';
 import '../../widgets/shop/shop_coming_soon_view.dart';
 
 /// Home hub — dark Bangla lobby composed from section widgets.
@@ -105,6 +106,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(playerProfileStoreProvider);
+    final audioSettings = ref.watch(audioSettingsProvider);
     final level = (profile.gamesPlayed ~/ 3) + 1;
     final coins = profile.highestScore * 10;
     final audio = ref.read(audioManagerProvider);
@@ -127,18 +129,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   playerName: profile.playerName,
                   level: level,
                   coins: coins,
-                  soundEnabled: profile.soundEnabled,
+                  soundEnabled: audioSettings.isSfxOn,
                   onToggleSound: () async {
-                    await audio.play(AudioEvent.toggleClick);
-                    await profile.setSoundEnabled(!profile.soundEnabled);
-                    if (!profile.soundEnabled) {
+                    final next = !audioSettings.isSfxOn;
+                    await ref
+                        .read(audioSettingsProvider.notifier)
+                        .setSfxOn(next);
+                    if (next) {
+                      await audio.play(AudioEvent.toggleClick);
+                    } else {
                       await audio.stopSfx();
                     }
-                    if (mounted) setState(() {});
                   },
                   onSettings: () {
                     audio.play(AudioEvent.buttonTap);
-                    context.push(AppRoutes.settings);
+                    SettingsBottomSheet.show(context);
                   },
                 ),
                 AppSpacing.gapVMd,
