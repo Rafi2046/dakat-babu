@@ -9,26 +9,31 @@ import '../../../core/theme/app_theme.dart';
 import '../../../domain/game/game_role.dart';
 import '../../viewmodels/single_player_engine.dart';
 import '../../widgets/parallax_lobby_background.dart';
+import '../../widgets/round_result_overlay.dart';
 import '../../widgets/tactile_menu_button.dart';
+import '../../widgets/target_selection_glow.dart';
 
-/// Offline Vs Computer UI driven by [singlePlayerEngineProvider].
-class SinglePlayerScreen extends ConsumerStatefulWidget {
+/// Practice mode — deliberately pick an exact role (not classic mystery draw).
+class PracticeModeScreen extends ConsumerStatefulWidget {
   final String humanName;
 
-  const SinglePlayerScreen({super.key, this.humanName = 'You'});
+  const PracticeModeScreen({super.key, this.humanName = 'You'});
 
   @override
-  ConsumerState<SinglePlayerScreen> createState() => _SinglePlayerScreenState();
+  ConsumerState<PracticeModeScreen> createState() => _PracticeModeScreenState();
 }
 
-class _SinglePlayerScreenState extends ConsumerState<SinglePlayerScreen> {
+/// @Deprecated('Use PracticeModeScreen') — kept for older imports.
+typedef SinglePlayerScreen = PracticeModeScreen;
+
+class _PracticeModeScreenState extends ConsumerState<PracticeModeScreen> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(singlePlayerEngineProvider.notifier)
-          .startMatch(humanName: widget.humanName);
+          .startPracticeMatch(humanName: widget.humanName);
     });
   }
 
@@ -40,49 +45,65 @@ class _SinglePlayerScreenState extends ConsumerState<SinglePlayerScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       body: ParallaxLobbyBackground(
-        child: SafeArea(
-          child: Padding(
-            padding: AppSpacing.screenPadding,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
+        child: Stack(
+          children: [
+            SafeArea(
+              child: Padding(
+                padding: AppSpacing.screenPadding,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    IconButton(
-                      onPressed: () => context.pop(),
-                      icon: const Icon(Icons.arrow_back_rounded),
-                      color: AppColors.textLightPrimary,
-                    ),
-                    Expanded(
-                      child: Text(
-                        'Vs Computer',
-                        textAlign: TextAlign.center,
-                        style: HomeTextStyles.hero(
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => context.pop(),
+                          icon: const Icon(Icons.arrow_back_rounded),
                           color: AppColors.textLightPrimary,
                         ),
+                        Expanded(
+                          child: Text(
+                            'Practice Mode',
+                            textAlign: TextAlign.center,
+                            style: HomeTextStyles.hero(
+                              color: AppColors.textLightPrimary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 48),
+                      ],
+                    ),
+                    AppSpacing.gapVMd,
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: AppTheme.embossedPanel(
+                        brightness,
+                        accent: AppColors.secondary,
+                      ),
+                      child: Text(
+                        state.statusMessage ?? '',
+                        textAlign: TextAlign.center,
+                        style: HomeTextStyles.body(color: AppColors.secondary),
                       ),
                     ),
-                    const SizedBox(width: 48),
+                    AppSpacing.gapVLg,
+                    Expanded(child: _buildBody(state)),
                   ],
                 ),
-                AppSpacing.gapVMd,
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: AppTheme.embossedPanel(
-                    brightness,
-                    accent: AppColors.secondary,
-                  ),
-                  child: Text(
-                    state.statusMessage ?? '',
-                    textAlign: TextAlign.center,
-                    style: HomeTextStyles.body(color: AppColors.secondary),
-                  ),
-                ),
-                AppSpacing.gapVLg,
-                Expanded(child: _buildBody(state)),
-              ],
+              ),
             ),
-          ),
+            if (state.phase == SinglePlayerPhase.result &&
+                state.resultWinner != null)
+              RoundResultOverlay(
+                winner: state.resultWinner!,
+                headlineOverride: state.statusMessage,
+                nextLabel: 'আবার খেলো',
+                onNextRound: () {
+                  ref
+                      .read(singlePlayerEngineProvider.notifier)
+                      .playAgainPractice();
+                },
+              ),
+          ],
         ),
       ),
     );
@@ -93,10 +114,12 @@ class _SinglePlayerScreenState extends ConsumerState<SinglePlayerScreen> {
       case SinglePlayerPhase.pickRole:
         return _RolePicker(
           enabled: !state.busy,
-          onPick: (role) =>
-              ref.read(singlePlayerEngineProvider.notifier).selectHumanRole(role),
+          onPick: (role) => ref
+              .read(singlePlayerEngineProvider.notifier)
+              .selectHumanRole(role),
         );
-      case SinglePlayerPhase.botsThinking:
+      case SinglePlayerPhase.revealing:
+      case SinglePlayerPhase.policeSearching:
         return Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -104,19 +127,22 @@ class _SinglePlayerScreenState extends ConsumerState<SinglePlayerScreen> {
               const CircularProgressIndicator(color: AppColors.secondary),
               AppSpacing.gapVMd,
               Text(
-                'বটরা চিন্তা করছে...',
+                state.statusMessage ?? '...',
                 style: HomeTextStyles.title(color: AppColors.textLightPrimary),
               ),
             ],
           ),
         );
       case SinglePlayerPhase.awaitingGuess:
-        if (state.humanIsPolice && state.view != null) {
-          return _SuspectGrid(
-            state: state,
-            onGuess: (id) => ref
-                .read(singlePlayerEngineProvider.notifier)
-                .submitHumanGuess(id),
+        if (state.humanIsPolice) {
+          return TargetSelectionGlow(
+            isActive: true,
+            child: _SuspectGrid(
+              state: state,
+              onGuess: (id) => ref
+                  .read(singlePlayerEngineProvider.notifier)
+                  .submitHumanGuess(id),
+            ),
           );
         }
         return Center(
@@ -125,12 +151,9 @@ class _SinglePlayerScreenState extends ConsumerState<SinglePlayerScreen> {
             style: HomeTextStyles.title(color: AppColors.textLightSecondary),
           ),
         );
+      case SinglePlayerPhase.pickCard:
       case SinglePlayerPhase.result:
-        return _ResultPane(
-          state: state,
-          onAgain: () =>
-              ref.read(singlePlayerEngineProvider.notifier).playAgain(),
-        );
+        return const SizedBox.shrink();
     }
   }
 }
@@ -225,9 +248,8 @@ class _SuspectGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final suspects = state.view!.players
-        .where((p) => p.playerId != state.humanId)
-        .toList();
+    final suspects =
+        state.players.where((p) => p.id != state.humanId).toList();
 
     return Column(
       children: [
@@ -247,67 +269,10 @@ class _SuspectGrid extends StatelessWidget {
                 icon: Icons.person_search_rounded,
                 accentColor: AppColors.police,
                 enabled: !state.busy,
-                onTap: () => onGuess(card.playerId),
+                onTap: () => onGuess(card.id),
               );
             },
           ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ResultPane extends StatelessWidget {
-  final SinglePlayerState state;
-  final VoidCallback onAgain;
-
-  const _ResultPane({required this.state, required this.onAgain});
-
-  @override
-  Widget build(BuildContext context) {
-    final result = state.result!;
-    final accent = result.isCorrect ? AppColors.success : AppColors.chor;
-
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: accent, width: 2),
-            boxShadow: AppColors.darkNeonGlow(accent),
-            color: AppColors.surfaceElevatedDark,
-          ),
-          child: Column(
-            children: [
-              Icon(
-                result.isCorrect
-                    ? Icons.local_police_rounded
-                    : Icons.directions_run_rounded,
-                color: accent,
-                size: 48,
-              ),
-              AppSpacing.gapVMd,
-              Text(
-                state.statusMessage ?? '',
-                textAlign: TextAlign.center,
-                style: HomeTextStyles.hero(color: accent),
-              ),
-              AppSpacing.gapVSm,
-              Text(
-                'Chor was: ${state.players.firstWhere((p) => p.id == result.chorPlayerId).name}',
-                style: HomeTextStyles.subtitle(),
-              ),
-            ],
-          ),
-        ),
-        const Spacer(),
-        TactileMenuButton(
-          text: 'Play Again',
-          icon: Icons.replay_rounded,
-          accentColor: AppColors.secondary,
-          onTap: onAgain,
         ),
       ],
     );

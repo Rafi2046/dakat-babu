@@ -10,6 +10,7 @@ abstract final class AppRoutes {
   static const String personalScore = '/my-score';
   static const String robot = '/robot';
   static const String singlePlayer = '/single-player';
+  static const String practiceSinglePlayer = '/practice-single-player';
   static const String connectionError = '/connection-error';
   static const String lobbyWaiting = '/lobby-waiting';
   static const String lobbyWaitingRoom = '/lobby-waiting/:roomCode';
@@ -31,6 +32,7 @@ abstract final class AppRoutes {
   static const String personalScoreName = 'personalScore';
   static const String robotName = 'robot';
   static const String singlePlayerName = 'singlePlayer';
+  static const String practiceSinglePlayerName = 'practiceSinglePlayer';
   static const String connectionErrorName = 'connectionError';
   static const String lobbyWaitingName = 'lobbyWaiting';
   static const String lobbyName = 'lobby';

@@ -14,6 +14,7 @@ import '../../presentation/screens/mode_select/mode_select_screen.dart';
 import '../../presentation/screens/pass_and_play/pass_and_play_game_screen.dart';
 import '../../presentation/screens/pass_and_play/pass_and_play_setup_screen.dart';
 import '../../presentation/screens/results/results_screen.dart';
+import '../../presentation/screens/robot/classic_single_player_screen.dart';
 import '../../presentation/screens/robot/robot_screen.dart';
 import '../../presentation/screens/robot/single_player_screen.dart';
 import '../../presentation/screens/scoreboard/personal_score_screen.dart';
@@ -82,7 +83,19 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (extra is Map && extra['humanName'] is String) {
             name = extra['humanName'] as String;
           }
-          return SinglePlayerScreen(humanName: name);
+          return ClassicSinglePlayerScreen(humanName: name);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.practiceSinglePlayer,
+        name: AppRoutes.practiceSinglePlayerName,
+        builder: (context, state) {
+          final extra = state.extra;
+          var name = 'You';
+          if (extra is Map && extra['humanName'] is String) {
+            name = extra['humanName'] as String;
+          }
+          return PracticeModeScreen(humanName: name);
         },
       ),
       GoRoute(
