@@ -211,7 +211,18 @@ class _ArenaHeader extends StatelessWidget {
               child: Text(
                 'Vs Computer',
                 textAlign: TextAlign.center,
-                style: HomeTextStyles.hero(color: AppColors.textLightPrimary),
+                style: HomeTextStyles.hero(color: AppColors.textLightPrimary)
+                    .copyWith(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.4,
+                  shadows: [
+                    Shadow(
+                      color: AppColors.secondary.withValues(alpha: 0.45),
+                      blurRadius: 12,
+                    ),
+                  ],
+                ),
               ),
             ),
             Container(
@@ -475,6 +486,16 @@ class _ScoreRow extends StatelessWidget {
               style: HomeTextStyles.caption(color: AppColors.textLightMuted),
             ),
           ),
+          if (role != null) ...[
+            Image.asset(
+              role!.badgeAsset,
+              width: 22,
+              height: 22,
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => const SizedBox(width: 22),
+            ),
+            const SizedBox(width: 6),
+          ],
           Expanded(
             child: Text(
               isYou ? '${player.name} (You)' : player.name,
@@ -732,11 +753,11 @@ class _MysterySlotState extends State<_MysterySlot> {
           .animate(onPlay: (c) => c.repeat(reverse: true))
           .moveY(
             begin: 0,
-            end: -4,
-            duration: (1400 + widget.index * 180).ms,
+            end: -5,
+            duration: Duration(milliseconds: 1500 + widget.index * 220),
             curve: Curves.easeInOut,
-          )
-          .then(delay: (widget.index * 40).ms);
+            delay: Duration(milliseconds: widget.index * 90),
+          );
     }
 
     return Opacity(

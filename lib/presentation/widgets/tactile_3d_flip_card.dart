@@ -117,6 +117,9 @@ class _Tactile3DFlipCardState extends ConsumerState<Tactile3DFlipCard>
 
   void _syncTo(bool revealed) {
     if (!mounted) return;
+    if (revealed && widget.playFlipSound) {
+      ref.read(audioManagerProvider).play(AudioEvent.roleCardFlip);
+    }
     setState(() => _isAnimating = true);
     if (revealed) {
       _controller.forward();
