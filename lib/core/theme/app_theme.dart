@@ -111,7 +111,7 @@ abstract final class AppTheme {
     );
   }
 
-  /// Light theme variant for accessibility or optional user preference.
+  /// Light theme — soft colorful emboss instead of neon glow.
   static ThemeData get lightTheme {
     final textTheme = AppTextStyles.createTextTheme(Brightness.light);
 
@@ -139,10 +139,11 @@ abstract final class AppTheme {
         titleTextStyle: AppTextStyles.heading2(color: AppColors.textDarkPrimary),
         iconTheme: const IconThemeData(color: AppColors.textDarkPrimary),
       ),
-      cardTheme: const CardThemeData(
-        color: AppColors.surfaceLight,
-        elevation: 1,
-        shape: RoundedRectangleBorder(
+      cardTheme: CardThemeData(
+        color: AppColors.embossFaceLight,
+        elevation: 0,
+        shadowColor: AppColors.lightEmbossPrimary,
+        shape: const RoundedRectangleBorder(
           borderRadius: AppRadius.cardRadius,
           side: BorderSide(color: AppColors.borderLight, width: 1.0),
         ),
@@ -160,7 +161,8 @@ abstract final class AppTheme {
             horizontal: AppSpacing.lg,
             vertical: AppSpacing.md,
           ),
-          elevation: 2,
+          elevation: 3,
+          shadowColor: AppColors.lightEmbossPrimary,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -179,7 +181,7 @@ abstract final class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceLight,
+        fillColor: AppColors.embossWellLight,
         hintStyle: AppTextStyles.bodyMedium(color: AppColors.textDarkMuted),
         labelStyle: AppTextStyles.bodyMedium(color: AppColors.textDarkSecondary),
         contentPadding: const EdgeInsets.symmetric(
@@ -212,6 +214,48 @@ abstract final class AppTheme {
         thickness: 1,
         space: 1,
       ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.surfaceElevatedLight,
+        contentTextStyle: AppTextStyles.bodyMedium(
+          color: AppColors.textDarkPrimary,
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
+      ),
+    );
+  }
+
+  /// Embossed container decoration — neon in dark, soft color drop in light.
+  static BoxDecoration embossedPanel(
+    Brightness brightness, {
+    Color? accent,
+    double radius = 18,
+  }) {
+    final isDark = brightness == Brightness.dark;
+    final face = isDark ? AppColors.surfaceElevatedDark : AppColors.embossFaceLight;
+    final border = isDark ? AppColors.borderDark : AppColors.borderLight;
+    final glow = accent ?? (isDark ? AppColors.secondary : AppColors.primary);
+
+    return BoxDecoration(
+      color: face,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(
+        color: isDark
+            ? glow.withValues(alpha: 0.28)
+            : border,
+        width: 1.2,
+      ),
+      boxShadow: AppColors.tactileGlow(brightness, glow),
+      gradient: isDark
+          ? null
+          : LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                AppColors.embossWellLight,
+              ],
+            ),
     );
   }
 }
