@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/constants/app_constants.dart';
 import 'core/di/providers.dart';
+import 'core/l10n/locale_provider.dart';
 import 'core/routes/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'data/local/home_daily_gift_store.dart';
 import 'data/local/player_profile_store.dart';
 import 'data/services/supabase_service.dart';
+import 'l10n/app_localizations.dart';
 
 /// Entry point for Chor Police Dakat Babu.
 Future<void> main() async {
@@ -33,13 +36,14 @@ Future<void> main() async {
   );
 }
 
-/// Root widget configuring theme, router, and state management.
+/// Root widget configuring theme, router, locale, and state management.
 class DakatBabuApp extends ConsumerWidget {
   const DakatBabuApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final locale = ref.watch(localeProvider);
 
     return MaterialApp.router(
       title: AppConstants.appName,
@@ -47,6 +51,14 @@ class DakatBabuApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.dark,
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       routerConfig: router,
     );
   }
