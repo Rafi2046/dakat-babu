@@ -18,3 +18,4 @@ export 'room_widgets.dart';
 export 'scoreboard_panel.dart';
 export 'timer_round.dart';
 export 'top_bar.dart';
+export '../tactile_3d_flip_card.dart';
