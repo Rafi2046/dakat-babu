@@ -29,7 +29,7 @@ class CharacterAvatar extends StatelessWidget {
               width: size,
               height: size,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _initials(),
+              errorBuilder: (_, _, _) => _initials(),
             ),
           )
         : _initials();

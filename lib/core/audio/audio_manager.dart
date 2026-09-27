@@ -128,6 +128,12 @@ class AudioManager {
   Future<String> _resolveAsset(AudioEvent event) async {
     final preferred = AudioCatalog.pathFor(event);
     final fallback = AudioCatalog.placeholderFor(event);
+
+    // Don't re-probe missing production files every play (jank + log spam).
+    if (_missingProductionPaths.contains(preferred)) {
+      return fallback;
+    }
+
     try {
       await rootBundle.load('assets/$preferred');
       return preferred;

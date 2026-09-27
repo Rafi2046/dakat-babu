@@ -37,7 +37,7 @@ class RoleVectorIcon extends StatelessWidget {
         child: Image.asset(
           role.standingAsset,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => ColoredBox(
+          errorBuilder: (_, _, _) => ColoredBox(
             color: role.containerColor,
             child: Icon(Icons.person, color: role.color, size: size * 0.5),
           ),
@@ -60,7 +60,7 @@ class RolePortrait extends StatelessWidget {
       role.standingAsset,
       height: height,
       fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => RoleVectorIcon(role: role, size: height * 0.5),
+      errorBuilder: (_, _, _) => RoleVectorIcon(role: role, size: height * 0.5),
     );
   }
 }

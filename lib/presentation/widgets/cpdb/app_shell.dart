@@ -26,14 +26,14 @@ class AppShell extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (topBar != null) topBar!,
+          ?topBar,
           Expanded(
             child: Padding(
               padding: padding ?? AppSpacing.screenPadding,
               child: body,
             ),
           ),
-          if (bottomNavigation != null) bottomNavigation!,
+          ?bottomNavigation,
         ],
       ),
     );

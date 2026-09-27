@@ -26,7 +26,7 @@ class ConnectionErrorScreen extends StatelessWidget {
           Image.asset(
             AppImages.chorStanding,
             height: 160,
-            errorBuilder: (_, __, ___) =>
+            errorBuilder: (_, _, _) =>
                 const Icon(Icons.wifi_off, size: 80, color: Colors.white),
           ),
           AppSpacing.gapVLg,

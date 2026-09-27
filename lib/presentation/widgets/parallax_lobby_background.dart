@@ -107,45 +107,67 @@ class _ParallaxLobbyBackgroundState
     final pad = widget.maxOffset * 2.2;
 
     return ClipRect(
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Deep background — subtle grid, barely moves.
-          Transform.translate(
-            offset: offset * 0.18,
-            child: OverflowBox(
-              minWidth: 0,
-              minHeight: 0,
-              maxWidth: double.infinity,
-              maxHeight: double.infinity,
-              child: Padding(
-                padding: EdgeInsets.all(pad * 0.18),
-                child: const _DeepGridLayer(),
-              ),
-            ),
-          ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final w = constraints.maxWidth;
+          final h = constraints.maxHeight;
 
-          // Midground — Police blue / Chor crimson ambient glows.
-          Transform.translate(
-            offset: offset * 0.5,
-            child: OverflowBox(
-              minWidth: 0,
-              minHeight: 0,
-              maxWidth: double.infinity,
-              maxHeight: double.infinity,
-              child: Padding(
-                padding: EdgeInsets.all(pad * 0.5),
-                child: const _MidGlowLayer(),
-              ),
-            ),
-          ),
+          // Unbounded / zero sizes crash LinearGradient shaders (NaN offsets).
+          if (!w.isFinite || !h.isFinite || w <= 0 || h <= 0) {
+            return ColoredBox(
+              color: AppColors.backgroundDark,
+              child: widget.child,
+            );
+          }
 
-          // Foreground — actual UI moves the most for depth.
-          Transform.translate(
-            offset: offset,
-            child: widget.child,
-          ),
-        ],
+          final layerW = w + pad * 2;
+          final layerH = h + pad * 2;
+
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              // Deep background — subtle grid, barely moves.
+              Transform.translate(
+                offset: offset * 0.18,
+                child: OverflowBox(
+                  alignment: Alignment.center,
+                  minWidth: layerW,
+                  maxWidth: layerW,
+                  minHeight: layerH,
+                  maxHeight: layerH,
+                  child: SizedBox(
+                    width: layerW,
+                    height: layerH,
+                    child: const _DeepGridLayer(),
+                  ),
+                ),
+              ),
+
+              // Midground — Police blue / Chor crimson ambient glows.
+              Transform.translate(
+                offset: offset * 0.5,
+                child: OverflowBox(
+                  alignment: Alignment.center,
+                  minWidth: layerW,
+                  maxWidth: layerW,
+                  minHeight: layerH,
+                  maxHeight: layerH,
+                  child: SizedBox(
+                    width: layerW,
+                    height: layerH,
+                    child: const _MidGlowLayer(),
+                  ),
+                ),
+              ),
+
+              // Foreground — actual UI moves the most for depth.
+              Transform.translate(
+                offset: offset,
+                child: widget.child,
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -236,6 +258,13 @@ class _GridPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (!size.width.isFinite ||
+        !size.height.isFinite ||
+        size.width <= 0 ||
+        size.height <= 0) {
+      return;
+    }
+
     final paint = Paint()
       ..color = color
       ..strokeWidth = 1;

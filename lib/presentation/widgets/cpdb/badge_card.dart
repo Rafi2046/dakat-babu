@@ -48,7 +48,7 @@ class BadgeCard extends StatelessWidget {
                   ? Image.asset(
                       iconAsset!,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Icon(
+                      errorBuilder: (_, _, _) => Icon(
                         unlocked ? Icons.emoji_events : Icons.lock,
                         size: 48,
                         color: AppColors.raja,

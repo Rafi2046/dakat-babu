@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_constants.dart';
 import '../../domain/game/game_engine.dart';
 import '../../domain/game/game_phase.dart';
-import '../../domain/game/game_role.dart';
 import '../../domain/game/player_view.dart';
 
 /// Single player in Pass & Pass mode.

@@ -168,63 +168,68 @@ class _Tactile3DFlipCardState extends ConsumerState<Tactile3DFlipCard>
       });
     }
 
+    final card = AnimatedBuilder(
+      animation: _flip,
+      builder: (context, _) {
+        final t = _flip.value;
+        final angle = t * math.pi;
+        final showFront = angle <= (math.pi / 2);
+
+        // Depth peaks at edge-on (t = 0.5) for stretch/contract shadow.
+        final depth = math.sin(angle).clamp(0.0, 1.0);
+        final shadowBlur = 10.0 + depth * 28.0;
+        final shadowDy = 6.0 + depth * 22.0;
+        final shadowSpread = depth * 6.0;
+        final shadowAlpha = 0.35 + depth * 0.35;
+
+        return Transform(
+          alignment: Alignment.center,
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, 0.001)
+            ..rotateY(angle),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: shadowAlpha),
+                  blurRadius: shadowBlur,
+                  spreadRadius: shadowSpread,
+                  offset: Offset(0, shadowDy),
+                ),
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.12 * depth),
+                  blurRadius: shadowBlur * 0.6,
+                  offset: Offset(0, shadowDy * 0.4),
+                ),
+              ],
+            ),
+            child: showFront
+                ? _face(child: widget.backFace ?? _defaultBack())
+                : Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.identity()..rotateY(math.pi),
+                    child: _face(
+                      child: widget.frontFace ?? _defaultFront(widget.role),
+                    ),
+                  ),
+          ),
+        );
+      },
+    );
+
     return SizedBox(
       width: widget.width,
       height: widget.height,
-      child: GestureDetector(
-        onTap: _handleTap,
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedBuilder(
-          animation: _flip,
-          builder: (context, _) {
-            final t = _flip.value;
-            final angle = t * math.pi;
-            final showFront = angle <= (math.pi / 2);
-
-            // Depth peaks at edge-on (t = 0.5) for stretch/contract shadow.
-            final depth = math.sin(angle).clamp(0.0, 1.0);
-            final shadowBlur = 10.0 + depth * 28.0;
-            final shadowDy = 6.0 + depth * 22.0;
-            final shadowSpread = depth * 6.0;
-            final shadowAlpha = 0.35 + depth * 0.35;
-
-            return Transform(
-              alignment: Alignment.center,
-              transform: Matrix4.identity()
-                ..setEntry(3, 2, 0.001)
-                ..rotateY(angle),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(22),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: shadowAlpha),
-                      blurRadius: shadowBlur,
-                      spreadRadius: shadowSpread,
-                      offset: Offset(0, shadowDy),
-                    ),
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.12 * depth),
-                      blurRadius: shadowBlur * 0.6,
-                      offset: Offset(0, shadowDy * 0.4),
-                    ),
-                  ],
-                ),
-                child: showFront
-                    ? _face(child: widget.backFace ?? _defaultBack())
-                    : Transform(
-                        alignment: Alignment.center,
-                        transform: Matrix4.identity()..rotateY(math.pi),
-                        child: _face(
-                          child: widget.frontFace ??
-                              _defaultFront(widget.role),
-                        ),
-                      ),
-              ),
-            );
-          },
-        ),
-      ),
+      // Only attach a GestureDetector when interactive — otherwise a parent
+      // tap handler never fires (child wins the arena even if onTap no-ops).
+      child: widget.enableTap
+          ? GestureDetector(
+              onTap: _handleTap,
+              behavior: HitTestBehavior.opaque,
+              child: card,
+            )
+          : card,
     );
   }
 

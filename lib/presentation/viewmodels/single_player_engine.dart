@@ -185,8 +185,8 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
 
     await ref.read(audioManagerProvider).play(AudioEvent.roleCardFlip);
 
-    // Let the 3D flip + haptic settle.
-    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    // Give the 3D flip (~650ms) time to finish + a beat to read the role.
+    await Future<void>.delayed(const Duration(milliseconds: 1800));
     if (state.phase != SinglePlayerPhase.revealing) return;
 
     await _afterReveal(assignment);
@@ -310,7 +310,7 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
 
     await ref.read(audioManagerProvider).playGuessResultSequence(
           correct: result.isCorrect,
-          policeTag: result.isCorrect,
+          policeTag: false,
         );
 
     final winnerName = updated

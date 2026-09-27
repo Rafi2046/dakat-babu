@@ -49,7 +49,7 @@ class RoleCard extends StatelessWidget {
             role.standingAsset,
             height: compact ? 120 : 200,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => Icon(
+            errorBuilder: (_, _, _) => Icon(
               Icons.person,
               size: compact ? 80 : 120,
               color: Colors.white,
