@@ -1,4 +1,4 @@
-import 'package:audioplayers/audioplayers.dart';
+import 'package:audioplayers/audioplayers.dart' hide AudioEvent;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 

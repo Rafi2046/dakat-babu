@@ -1,8 +1,8 @@
-import 'audio/audio_event.dart';
-import 'audio/audio_manager.dart';
+import '../audio/audio_event.dart';
+import '../audio/audio_manager.dart';
 
-export 'audio/audio_event.dart' show AudioEvent;
-export 'audio/audio_providers.dart' show audioManagerProvider;
+export '../audio/audio_event.dart' show AudioEvent;
+export '../audio/audio_providers.dart' show audioManagerProvider;
 
 /// Back-compat alias.
 typedef GameAudioEvent = AudioEvent;

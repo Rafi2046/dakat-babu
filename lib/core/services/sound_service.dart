@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'audio/audio_event.dart';
-import 'audio/audio_providers.dart';
+import '../audio/audio_event.dart';
+import '../audio/audio_providers.dart';
 
 /// Legacy thin wrapper — prefer [audioManagerProvider] + [AudioEvent].
 @Deprecated('Use audioManagerProvider.play(AudioEvent...)')
