@@ -23,6 +23,7 @@ class PlayerProfileStore {
   static const _kVibration = 'setting_vibration';
   static const _kNotifications = 'setting_notifications';
   static const _kLanguage = 'setting_language';
+  static const _kTheme = 'setting_theme_mode';
   static const _kBadges = 'badges_unlocked';
 
   String get playerName => _prefs.getString(_kName) ?? 'Player';
@@ -45,6 +46,8 @@ class PlayerProfileStore {
   bool get vibrationEnabled => _prefs.getBool(_kVibration) ?? true;
   bool get notificationsEnabled => _prefs.getBool(_kNotifications) ?? true;
   String get language => _prefs.getString(_kLanguage) ?? 'en';
+  /// `dark` | `light` | `system`
+  String get themeMode => _prefs.getString(_kTheme) ?? 'dark';
 
   Future<void> setMusicEnabled(bool v) => _prefs.setBool(_kMusic, v);
   Future<void> setSoundEnabled(bool v) => _prefs.setBool(_kSound, v);
@@ -52,6 +55,7 @@ class PlayerProfileStore {
   Future<void> setNotificationsEnabled(bool v) =>
       _prefs.setBool(_kNotifications, v);
   Future<void> setLanguage(String code) => _prefs.setString(_kLanguage, code);
+  Future<void> setThemeMode(String mode) => _prefs.setString(_kTheme, mode);
 
   Set<String> get unlockedBadgeIds {
     final raw = _prefs.getString(_kBadges);
