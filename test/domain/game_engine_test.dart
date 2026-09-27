@@ -27,6 +27,15 @@ void main() {
       expect(a.byPlayerId.values.toSet(), GameRole.values.toSet());
     });
 
+    test('first seating player is not stuck on babu across seeds', () {
+      final seen = <GameRole>{};
+      for (var seed = 0; seed < 64; seed++) {
+        final a = GameEngine.assignRoles(players, random: Random(seed));
+        seen.add(a.roleOf('p1')!);
+      }
+      expect(seen, GameRole.values.toSet());
+    });
+
     test('rejects non-4 player counts', () {
       expect(
         () => GameEngine.assignRoles(players.take(3).toList()),

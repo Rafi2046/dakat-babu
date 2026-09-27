@@ -14,6 +14,9 @@ abstract final class GameEngine {
   static const int scoreDelta = 1;
 
   /// Assigns a unique role to each of exactly four players.
+  ///
+  /// Shuffles the role deck, then deals one role per player in seating order.
+  /// A fresh [random] should be passed each round so consecutive deals differ.
   static RoleAssignment assignRoles(
     List<EnginePlayer> players, {
     Random? random,
@@ -23,15 +26,25 @@ abstract final class GameEngine {
         'CPDB requires exactly $requiredPlayers players, got ${players.length}',
       );
     }
-    final ids = players.map((p) => p.id).toList();
-    final rng = random ?? Random();
-    ids.shuffle(rng);
+    final rng = random ?? Random(DateTime.now().microsecondsSinceEpoch);
+    final deck = List<GameRole>.from(GameRole.values)..shuffle(rng);
+
+    final byId = <String, GameRole>{
+      for (var i = 0; i < players.length; i++) players[i].id: deck[i],
+    };
+
+    String idFor(GameRole role) {
+      for (final e in byId.entries) {
+        if (e.value == role) return e.key;
+      }
+      throw StateError('Role $role missing after deal');
+    }
 
     return RoleAssignment(
-      policePlayerId: ids[0],
-      babuPlayerId: ids[1],
-      chorPlayerId: ids[2],
-      dakatPlayerId: ids[3],
+      policePlayerId: idFor(GameRole.police),
+      babuPlayerId: idFor(GameRole.babu),
+      chorPlayerId: idFor(GameRole.chor),
+      dakatPlayerId: idFor(GameRole.dakat),
     );
   }
 

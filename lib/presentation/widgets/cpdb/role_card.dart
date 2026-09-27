@@ -46,13 +46,18 @@ class RoleCard extends StatelessWidget {
           ),
           AppSpacing.gapVMd,
           Image.asset(
-            role.standingAsset,
+            role.badgeAsset,
             height: compact ? 120 : 200,
             fit: BoxFit.contain,
-            errorBuilder: (_, _, _) => Icon(
-              Icons.person,
-              size: compact ? 80 : 120,
-              color: Colors.white,
+            errorBuilder: (_, _, _) => Image.asset(
+              role.standingAsset,
+              height: compact ? 120 : 200,
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => Icon(
+                Icons.person,
+                size: compact ? 80 : 120,
+                color: Colors.white,
+              ),
             ),
           ),
           AppSpacing.gapVMd,

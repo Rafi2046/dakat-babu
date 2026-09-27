@@ -40,7 +40,8 @@ class PassAndPlayPlayer {
     return PassAndPlayPlayer(
       id: id ?? this.id,
       name: name ?? this.name,
-      role: clearRole ? null : (role ?? this.role),
+      // Prefer explicit [role] when provided so reshuffles never stick.
+      role: clearRole ? null : (role != null ? role : this.role),
       totalScore: totalScore ?? this.totalScore,
       roundScore: roundScore ?? this.roundScore,
       correctGuesses: correctGuesses ?? this.correctGuesses,
@@ -198,11 +199,14 @@ class PassAndPlayState {
 
 /// ViewModel coordinating Pass & Pass using [GameEngine].
 class PassAndPlayViewModel extends StateNotifier<PassAndPlayState> {
-  final Random _random;
+  PassAndPlayViewModel({Random? random}) : super(const PassAndPlayState()) {
+    // [random] kept for tests that inject determinism via assignRoles callers.
+    if (random != null) {
+      _testRandom = random;
+    }
+  }
 
-  PassAndPlayViewModel({Random? random})
-      : _random = random ?? Random.secure(),
-        super(const PassAndPlayState());
+  Random? _testRandom;
 
   void initMatch({
     required List<String> playerNames,
@@ -238,14 +242,30 @@ class PassAndPlayViewModel extends StateNotifier<PassAndPlayState> {
 
   void _assignRolesAndStartRound() {
     final enginePlayers = state.players.map((p) => p.toEngine()).toList();
+    final Random rng;
+    final injected = _testRandom;
+    if (injected != null) {
+      rng = injected;
+    } else {
+      // Fresh entropy every deal so consecutive rounds never repeat a stream.
+      rng = Random(
+        DateTime.now().microsecondsSinceEpoch ^
+            (state.currentRound * 0x9E3779B9) ^
+            identityHashCode(state.players.map((p) => p.id).join()),
+      );
+    }
     final assignment = GameEngine.assignRoles(
       enginePlayers,
-      random: _random,
+      random: rng,
     );
 
     final updatedPlayers = state.players.map((p) {
+      final dealt = assignment.roleOf(p.id);
+      if (dealt == null) {
+        throw StateError('No role dealt for player ${p.id}');
+      }
       return p.copyWith(
-        role: assignment.roleOf(p.id),
+        role: dealt,
         roundScore: 0,
       );
     }).toList();

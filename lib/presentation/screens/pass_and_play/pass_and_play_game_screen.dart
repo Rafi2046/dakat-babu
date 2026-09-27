@@ -145,6 +145,11 @@ class PassAndPlayGameScreen extends ConsumerWidget {
       padding: AppSpacing.screenPadding,
       child: Column(
         children: [
+          Text(
+            '${p?.name ?? 'Player'} — secret role',
+            style: AppTextStyles.heading2(),
+          ),
+          AppSpacing.gapVSm,
           Expanded(
             child: Center(
               child: state.isCardRevealed && role != null
