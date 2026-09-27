@@ -636,34 +636,49 @@ class _MysteryCardGrid extends StatelessWidget {
           child: SizedBox(
             width: cardW * 2 + gap,
             height: cardH * 2 + gap,
-            child: GridView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: 4,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: gap,
-                mainAxisSpacing: gap,
-                childAspectRatio: cardW / cardH,
-              ),
-              itemBuilder: (context, i) {
-                return _MysterySlot(
-                  index: i,
-                  width: cardW,
-                  height: cardH,
-                  selected: state.selectedCardIndex == i,
-                  locked: locked,
-                  revealedRole: state.selectedCardIndex == i
-                      ? state.humanRole
-                      : null,
-                  isRevealed: state.selectedCardIndex == i &&
-                      state.humanRole != null,
-                  onTap: () => onTap(i),
-                );
-              },
+            child: Column(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(child: _slot(0, cardW, cardH, locked)),
+                      SizedBox(width: gap),
+                      Expanded(child: _slot(1, cardW, cardH, locked)),
+                    ],
+                  ),
+                ),
+                SizedBox(height: gap),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(child: _slot(2, cardW, cardH, locked)),
+                      SizedBox(width: gap),
+                      Expanded(child: _slot(3, cardW, cardH, locked)),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _slot(int i, double cardW, double cardH, bool locked) {
+    return Center(
+      child: _MysterySlot(
+        index: i,
+        width: cardW,
+        height: cardH,
+        selected: state.selectedCardIndex == i,
+        locked: locked,
+        revealedRole:
+            state.selectedCardIndex == i ? state.humanRole : null,
+        isRevealed:
+            state.selectedCardIndex == i && state.humanRole != null,
+        onTap: () => onTap(i),
+      ),
     );
   }
 }
