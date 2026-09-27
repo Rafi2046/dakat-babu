@@ -63,8 +63,8 @@ class SinglePlayerState {
 
   bool get cardsLocked =>
       selectedCardIndex != null ||
-      phase != SinglePlayerPhase.pickCard &&
-          phase != SinglePlayerPhase.pickRole;
+      (phase != SinglePlayerPhase.pickCard &&
+          phase != SinglePlayerPhase.pickRole);
 
   /// Winner role for [RoundResultOverlay] (police catch vs chor escape).
   GameRole? get resultWinner {
