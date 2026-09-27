@@ -358,22 +358,30 @@ class _LiveScoreboard extends StatelessWidget {
                     style: HomeTextStyles.caption(color: AppColors.accent)
                         .copyWith(fontWeight: FontWeight.w800),
                   ),
-                  const Spacer(),
-                  Text(
-                    'Police +1 · Wrong → suspect +1',
-                    style: HomeTextStyles.caption(
-                      color: AppColors.textLightMuted,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Police +1 · Wrong → suspect +1',
+                      textAlign: TextAlign.right,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: HomeTextStyles.caption(
+                        color: AppColors.textLightMuted,
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               for (var i = 0; i < ranked.length; i++)
-                _ScoreRow(
-                  rank: i + 1,
-                  player: ranked[i],
-                  isYou: ranked[i].id == state.humanId,
-                  role: state.roleOf(ranked[i].id),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: _ScoreRow(
+                    rank: i + 1,
+                    player: ranked[i],
+                    isYou: ranked[i].id == state.humanId,
+                    role: state.roleOf(ranked[i].id),
+                  ),
                 ),
             ],
           ),
@@ -413,45 +421,34 @@ class _ScoreRow extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Row(
-              children: [
-                Flexible(
-                  child: Text(
-                    player.name,
-                    overflow: TextOverflow.ellipsis,
-                    style: HomeTextStyles.body(
-                      color: isYou
-                          ? AppColors.secondary
-                          : AppColors.textLightPrimary,
-                    ),
-                  ),
-                ),
-                if (isYou) ...[
-                  const SizedBox(width: 6),
-                  Text(
-                    '(You)',
-                    style: HomeTextStyles.caption(color: AppColors.secondary),
-                  ),
-                ],
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: badgeColor.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: badgeColor.withValues(alpha: 0.45),
-                    ),
-                  ),
-                  child: Text(
-                    badge,
-                    style: HomeTextStyles.caption(color: badgeColor),
-                  ),
-                ),
-              ],
+            child: Text(
+              isYou ? '${player.name} (You)' : player.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: HomeTextStyles.body(
+                color:
+                    isYou ? AppColors.secondary : AppColors.textLightPrimary,
+              ),
             ),
           ),
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: badgeColor.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: badgeColor.withValues(alpha: 0.45),
+              ),
+            ),
+            child: Text(
+              badge,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: HomeTextStyles.caption(color: badgeColor),
+            ),
+          ),
+          const SizedBox(width: 8),
           Text(
             '${player.score} pts',
             style: HomeTextStyles.body(color: AppColors.accent),
@@ -502,7 +499,10 @@ class _MatchOverOverlay extends StatelessWidget {
                 style: HomeTextStyles.title(color: AppColors.textLightPrimary),
               ),
               AppSpacing.gapVLg,
-              _LiveScoreboard(state: state),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: _LiveScoreboard(state: state),
+              ),
               const Spacer(),
               SizedBox(
                 width: double.infinity,
@@ -548,8 +548,13 @@ class _MysteryCardGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         const gap = 12.0;
-        final cardW = ((constraints.maxWidth - gap) / 2).clamp(120.0, 180.0);
-        final cardH = ((constraints.maxHeight - gap) / 2).clamp(150.0, 220.0);
+        final maxW =
+            constraints.maxWidth.isFinite ? constraints.maxWidth : 320.0;
+        final maxH =
+            constraints.maxHeight.isFinite ? constraints.maxHeight : 360.0;
+        // Avoid min sizes that overflow the arena and clip taps.
+        final cardW = ((maxW - gap) / 2).clamp(96.0, 180.0);
+        final cardH = ((maxH - gap) / 2).clamp(110.0, 220.0);
 
         return Center(
           child: SizedBox(
@@ -614,6 +619,25 @@ class _MysterySlot extends StatefulWidget {
 
 class _MysterySlotState extends State<_MysterySlot> {
   bool _pressed = false;
+  bool _tapped = false;
+
+  @override
+  void didUpdateWidget(covariant _MysterySlot oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.locked && !widget.selected && _tapped) {
+      _tapped = false;
+    }
+  }
+
+  void _handleTap() {
+    if (widget.locked || _tapped) return;
+    setState(() {
+      _tapped = true;
+      _pressed = false;
+    });
+    HapticFeedback.heavyImpact();
+    widget.onTap();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -622,42 +646,36 @@ class _MysterySlotState extends State<_MysterySlot> {
 
     return Opacity(
       opacity: dimmed ? 0.32 : 1,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(22),
-          onTap: widget.locked
-              ? null
-              : () {
-                  HapticFeedback.heavyImpact();
-                  widget.onTap();
-                },
-          onHighlightChanged: (v) {
-            if (!mounted) return;
-            setState(() => _pressed = v);
-          },
-          child: AnimatedScale(
-            scale: _pressed ? 0.95 : (widget.selected ? 1.03 : 1),
-            duration: const Duration(milliseconds: 120),
-            curve: Curves.easeOut,
-            child: Tactile3DFlipCard(
-              key: ValueKey('mystery_${widget.index}'),
-              width: widget.width,
-              height: widget.height,
-              role: widget.revealedRole,
-              isRevealed: widget.isRevealed,
-              playFlipSound: true,
-              enableTap: false,
-              duration: const Duration(milliseconds: 650),
-              backFace: _MysteryBack(
-                index: widget.index,
-                pressed: _pressed,
-                highlight: !widget.locked,
-              ),
-              frontFace: widget.revealedRole == null
-                  ? null
-                  : _RoleFront(role: widget.revealedRole!, accent: accent),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: widget.locked
+            ? null
+            : (_) => setState(() => _pressed = true),
+        onTapCancel: () {
+          if (_pressed) setState(() => _pressed = false);
+        },
+        onTap: widget.locked ? null : _handleTap,
+        child: AnimatedScale(
+          scale: _pressed ? 0.95 : (widget.selected ? 1.03 : 1),
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOut,
+          child: Tactile3DFlipCard(
+            key: ValueKey('mystery_${widget.index}'),
+            width: widget.width,
+            height: widget.height,
+            role: widget.revealedRole,
+            isRevealed: widget.isRevealed,
+            playFlipSound: false,
+            enableTap: false,
+            duration: const Duration(milliseconds: 650),
+            backFace: _MysteryBack(
+              index: widget.index,
+              pressed: _pressed,
+              highlight: !widget.locked,
             ),
+            frontFace: widget.revealedRole == null
+                ? null
+                : _RoleFront(role: widget.revealedRole!, accent: accent),
           ),
         ),
       ),
