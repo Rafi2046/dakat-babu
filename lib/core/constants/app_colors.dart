@@ -243,4 +243,16 @@ abstract final class AppColors {
       Color(0xFF4834D4),
     ],
   );
+
+  // --- Home hub action card colors (dark lobby) ---
+  static const Color homeOnline = Color(0xFF27AE60);
+  static const Color homeOnlineDeep = Color(0xFF1E8449);
+  static const Color homeMultiplayer = Color(0xFFF39C12);
+  static const Color homeMultiplayerDeep = Color(0xFFD68910);
+  static const Color homeRobot = Color(0xFF2D9CDB);
+  static const Color homeRobotDeep = Color(0xFF2471A3);
+  static const Color homePassPlay = Color(0xFF9B51E0);
+  static const Color homePassPlayDeep = Color(0xFF7D3C98);
+  static const Color homeFeatured = Color(0xFF2F80ED);
+  static const Color homeFeaturedDeep = Color(0xFF1A5276);
 }
