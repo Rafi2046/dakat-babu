@@ -10,9 +10,9 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_radius.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/audio/audio.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/routes/app_routes.dart';
-import '../../../core/services/sound_service.dart';
 import '../../../data/models/player_model.dart';
 import '../../../data/models/room_model.dart';
 import '../../../data/models/round_model.dart';
@@ -92,7 +92,12 @@ class _GameRoundScreenState extends ConsumerState<GameRoundScreen>
           current.remainingSeconds != prev?.remainingSeconds &&
           current.remainingSeconds <= 15 &&
           current.remainingSeconds > 0) {
-        ref.read(soundServiceProvider).playTick();
+        final audio = ref.read(audioManagerProvider);
+        audio.play(
+          current.remainingSeconds <= 5
+              ? AudioEvent.timerWarning
+              : AudioEvent.timerTick,
+        );
       }
 
       if (current.errorMessage != null &&

@@ -10,9 +10,9 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_radius.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/audio/audio.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/routes/app_routes.dart';
-import '../../../core/services/sound_service.dart';
 import '../../../core/utils/extensions.dart';
 import '../../../data/models/player_model.dart';
 import '../../../data/models/room_model.dart';
@@ -42,19 +42,23 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
     super.initState();
     _confettiController = ConfettiController(duration: const Duration(seconds: 3));
 
-    // Play dramatic suspense sting right before unmasking, followed by success chime or failure buzz
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(soundServiceProvider).playSting();
-      Future.delayed(const Duration(milliseconds: 750), () {
+    // Suspense → short beat → correct/wrong (+ police tag when correct).
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final audio = ref.read(audioManagerProvider);
+      await audio.play(AudioEvent.tensionSting);
+      await Future<void>.delayed(const Duration(milliseconds: 750));
+      if (!mounted) return;
+      final state = ref.read(resultsViewModelProvider(widget.roomCode));
+      final correct = state.round?.isGuessCorrect ?? false;
+      if (correct) _confettiController.play();
+      await audio.play(
+        correct ? AudioEvent.correctGuess : AudioEvent.wrongGuess,
+      );
+      if (correct) {
+        await Future<void>.delayed(const Duration(milliseconds: 120));
         if (!mounted) return;
-        final state = ref.read(resultsViewModelProvider(widget.roomCode));
-        if (state.round?.isGuessCorrect ?? false) {
-          _confettiController.play();
-          ref.read(soundServiceProvider).playSuccess();
-        } else {
-          ref.read(soundServiceProvider).playFailure();
-        }
-      });
+        await audio.play(AudioEvent.policeTag);
+      }
     });
   }
 
