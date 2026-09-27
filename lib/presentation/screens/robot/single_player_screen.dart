@@ -153,6 +153,7 @@ class _PracticeModeScreenState extends ConsumerState<PracticeModeScreen> {
         );
       case SinglePlayerPhase.pickCard:
       case SinglePlayerPhase.result:
+      case SinglePlayerPhase.matchOver:
         return const SizedBox.shrink();
     }
   }
