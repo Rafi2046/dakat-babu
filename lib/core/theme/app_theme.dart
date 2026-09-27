@@ -220,7 +220,7 @@ abstract final class AppTheme {
           color: AppColors.textDarkPrimary,
         ),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
       ),
     );
   }
