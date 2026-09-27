@@ -18,19 +18,26 @@ class AudioManager {
     this.enablePlayback = true,
   })  : _musicEnabled = musicEnabled ?? (() => true),
         _sfxEnabled = sfxEnabled ?? (() => true),
-        _music = musicPlayer ?? AudioPlayer(),
-        _sfx = sfxPlayer ?? AudioPlayer() {
-    _music.setReleaseMode(ReleaseMode.loop);
-    _sfx.setReleaseMode(ReleaseMode.stop);
-  }
-
-  /// When false, [play] is a no-op (used in widget/unit tests).
-  final bool enablePlayback;
+        _musicOverride = musicPlayer,
+        _sfxOverride = sfxPlayer;
 
   final AudioEnabledGetter _musicEnabled;
   final AudioEnabledGetter _sfxEnabled;
-  final AudioPlayer _music;
-  final AudioPlayer _sfx;
+  final AudioPlayer? _musicOverride;
+  final AudioPlayer? _sfxOverride;
+  AudioPlayer? _musicLazy;
+  AudioPlayer? _sfxLazy;
+
+  /// When false, [play] is a no-op and no platform players are created (tests).
+  final bool enablePlayback;
+
+  AudioPlayer get _music =>
+      _musicOverride ??
+      (_musicLazy ??= AudioPlayer()..setReleaseMode(ReleaseMode.loop));
+
+  AudioPlayer get _sfx =>
+      _sfxOverride ??
+      (_sfxLazy ??= AudioPlayer()..setReleaseMode(ReleaseMode.stop));
 
   /// 0.0–1.0 master volumes (Settings toggles gate playback; volumes ready for sliders).
   double musicVolume = 0.45;
@@ -62,6 +69,7 @@ class AudioManager {
   }
 
   Future<void> stopMusic() async {
+    if (!enablePlayback) return;
     try {
       await _music.stop();
     } catch (e) {
@@ -70,6 +78,7 @@ class AudioManager {
   }
 
   Future<void> stopSfx() async {
+    if (!enablePlayback) return;
     try {
       await _sfx.stop();
     } catch (e) {
@@ -151,8 +160,9 @@ class AudioManager {
 
   void dispose() {
     try {
-      _music.dispose();
-      _sfx.dispose();
+      _musicLazy?.dispose();
+      _sfxLazy?.dispose();
+      // Do not dispose overrides — caller owns them.
     } catch (e) {
       debugPrint('[AudioManager] dispose: $e');
     }
