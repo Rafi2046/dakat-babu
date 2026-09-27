@@ -86,12 +86,8 @@ class _RobotScreenState extends ConsumerState<RobotScreen> {
                     : _nameCtrl.text.trim();
                 ref.read(playerProfileStoreProvider).setPlayerName(name);
                 context.push(
-                  AppRoutes.passAndPlaySetup,
-                  extra: {
-                    'botMode': true,
-                    'difficulty': difficulty.name,
-                    'humanName': name,
-                  },
+                  AppRoutes.singlePlayer,
+                  extra: {'humanName': name},
                 );
               },
             ),
