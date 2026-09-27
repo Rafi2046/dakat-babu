@@ -5,3 +5,4 @@ export 'audio_catalog.dart';
 export 'audio_event.dart';
 export 'audio_manager.dart';
 export 'audio_providers.dart';
+export 'audio_settings_provider.dart';
