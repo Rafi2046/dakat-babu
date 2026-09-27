@@ -119,6 +119,13 @@ void main() {
           overrides: [
             playerProfileStoreProvider.overrideWithValue(profile),
             homeDailyGiftStoreProvider.overrideWithValue(gift),
+            audioManagerProvider.overrideWithValue(
+              AudioManager(
+                musicEnabled: () => profile.musicEnabled,
+                sfxEnabled: () => profile.soundEnabled,
+                enablePlayback: false,
+              ),
+            ),
           ],
           child: MaterialApp.router(routerConfig: router),
         ),

@@ -15,6 +15,7 @@ class AudioManager {
     AudioEnabledGetter? sfxEnabled,
     AudioPlayer? musicPlayer,
     AudioPlayer? sfxPlayer,
+    this.enablePlayback = true,
   })  : _musicEnabled = musicEnabled ?? (() => true),
         _sfxEnabled = sfxEnabled ?? (() => true),
         _music = musicPlayer ?? AudioPlayer(),
@@ -22,6 +23,9 @@ class AudioManager {
     _music.setReleaseMode(ReleaseMode.loop);
     _sfx.setReleaseMode(ReleaseMode.stop);
   }
+
+  /// When false, [play] is a no-op (used in widget/unit tests).
+  final bool enablePlayback;
 
   final AudioEnabledGetter _musicEnabled;
   final AudioEnabledGetter _sfxEnabled;
@@ -36,6 +40,7 @@ class AudioManager {
 
   /// Play a semantic event. Honors Music / SFX enable flags.
   Future<void> play(AudioEvent event) async {
+    if (!enablePlayback) return;
     final channel = AudioCatalog.channelFor(event);
     if (channel == AudioChannel.music) {
       if (!_musicEnabled()) return;
