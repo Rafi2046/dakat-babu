@@ -18,8 +18,8 @@ abstract final class GameEngine {
 
   /// Assigns a unique role to each of exactly four players.
   ///
-  /// Shuffles the role deck, then deals one role per player in seating order.
-  /// A fresh [random] should be passed each round so consecutive deals differ.
+  /// Shuffles **both** the seat order and the role deck, then zips them.
+  /// Never deals by fixed seating index alone.
   static RoleAssignment assignRoles(
     List<EnginePlayer> players, {
     Random? random,
@@ -29,11 +29,13 @@ abstract final class GameEngine {
         'CPDB requires exactly $requiredPlayers players, got ${players.length}',
       );
     }
-    final rng = random ?? Random(DateTime.now().microsecondsSinceEpoch);
+    final rng = random ?? Random.secure();
+
+    final seatIds = players.map((p) => p.id).toList(growable: true)..shuffle(rng);
     final deck = List<GameRole>.from(GameRole.values)..shuffle(rng);
 
     final byId = <String, GameRole>{
-      for (var i = 0; i < players.length; i++) players[i].id: deck[i],
+      for (var i = 0; i < seatIds.length; i++) seatIds[i]: deck[i],
     };
 
     String idFor(GameRole role) {

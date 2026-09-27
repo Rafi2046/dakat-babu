@@ -1,9 +1,42 @@
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:dakat_babu/presentation/viewmodels/pass_and_play_viewmodel.dart';
 import 'package:dakat_babu/domain/game/game_role.dart';
 
 void main() {
+  test('Pass & Pass first player roles vary across rounds', () {
+    final seen = <GameRole>{};
+    // Fixed but high-quality stream — prove seating p_1 is not stuck.
+    final vm = PassAndPlayViewModel(random: Random(7));
+    vm.initMatch(
+      playerNames: const ['A', 'B', 'C', 'D'],
+      totalRounds: 24,
+    );
+
+    for (var round = 1; round <= 24; round++) {
+      expect(vm.state.currentRound, round);
+      final p1 = vm.state.players.firstWhere((p) => p.id == 'p_1');
+      final fromAssignment = vm.state.assignment!.roleOf('p_1');
+      expect(p1.role, fromAssignment);
+      seen.add(p1.role!);
+
+      // Peek all → accuse chor → next round (or finish).
+      for (var i = 0; i < 4; i++) {
+        vm.readyToPeek();
+        vm.toggleCardReveal();
+        vm.finishPeekingCurrentPlayer();
+      }
+      vm.beginPoliceInterrogation();
+      vm.makeAccusation(vm.state.assignment!.chorPlayerId);
+      vm.nextRound();
+    }
+
+    expect(seen, GameRole.values.toSet());
+    expect(vm.state.stage, PassAndPlayStage.matchOver);
+  });
+
   test('Pass & Pass full match awards classic points and ends', () {
     final vm = PassAndPlayViewModel(random: null);
     // Use fixed Random via re-init — assign then force accusation path

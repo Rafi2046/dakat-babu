@@ -75,7 +75,10 @@ class PassAndPlayGameScreen extends ConsumerWidget {
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 250),
                 child: KeyedSubtree(
-                  key: ValueKey(state.stage),
+                  key: ValueKey(
+                    '${state.stage}_${state.currentRound}_${state.currentPeekIndex}_'
+                    '${state.assignment?.chorPlayerId}',
+                  ),
                   child: _stage(context, ref, state, notifier),
                 ),
               ),
@@ -140,7 +143,10 @@ class PassAndPlayGameScreen extends ConsumerWidget {
 
   Widget _peek(PassAndPlayState state, PassAndPlayViewModel notifier) {
     final p = state.currentPeekingPlayer;
-    final role = p?.role;
+    // Assignment is source of truth — never show a sticky/stale player.role.
+    final role = p == null
+        ? null
+        : (state.assignment?.roleOf(p.id) ?? p.role);
     return Padding(
       padding: AppSpacing.screenPadding,
       child: Column(
@@ -153,7 +159,12 @@ class PassAndPlayGameScreen extends ConsumerWidget {
           Expanded(
             child: Center(
               child: state.isCardRevealed && role != null
-                  ? RoleCard(role: role)
+                  ? RoleCard(
+                      key: ValueKey(
+                        'role_${p!.id}_${role.name}_r${state.currentRound}',
+                      ),
+                      role: role,
+                    )
                   : GameCardPlaceholder(
                       onTap: notifier.toggleCardReveal,
                       label: 'TAP TO REVEAL YOUR ROLE',

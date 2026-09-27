@@ -27,7 +27,7 @@ void main() {
       expect(a.byPlayerId.values.toSet(), GameRole.values.toSet());
     });
 
-    test('first seating player is not stuck on babu across seeds', () {
+    test('first seating player is not stuck on one role across seeds', () {
       final seen = <GameRole>{};
       for (var seed = 0; seed < 64; seed++) {
         final a = GameEngine.assignRoles(players, random: Random(seed));

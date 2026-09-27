@@ -8,6 +8,8 @@ import '../../domain/game/game_engine.dart';
 import '../../domain/game/game_phase.dart';
 import '../../domain/game/player_view.dart';
 
+const Object _unset = Object();
+
 /// Single player in Pass & Pass mode.
 class PassAndPlayPlayer {
   final String id;
@@ -31,7 +33,7 @@ class PassAndPlayPlayer {
   PassAndPlayPlayer copyWith({
     String? id,
     String? name,
-    GameRole? role,
+    Object? role = _unset,
     int? totalScore,
     int? roundScore,
     int? correctGuesses,
@@ -41,7 +43,11 @@ class PassAndPlayPlayer {
     return PassAndPlayPlayer(
       id: id ?? this.id,
       name: name ?? this.name,
-      role: clearRole ? null : (role ?? this.role),
+      role: clearRole
+          ? null
+          : identical(role, _unset)
+              ? this.role
+              : role as GameRole?,
       totalScore: totalScore ?? this.totalScore,
       roundScore: roundScore ?? this.roundScore,
       correctGuesses: correctGuesses ?? this.correctGuesses,
@@ -250,31 +256,35 @@ class PassAndPlayViewModel extends StateNotifier<PassAndPlayState> {
 
   void _assignRolesAndStartRound() {
     final enginePlayers = state.players.map((p) => p.toEngine()).toList();
+
     final Random rng;
     final injected = _testRandom;
     if (injected != null) {
       rng = injected;
     } else {
-      // Fresh entropy every deal so consecutive rounds never repeat a stream.
-      rng = Random(
-        DateTime.now().microsecondsSinceEpoch ^
-            (state.currentRound * 0x9E3779B9) ^
-            identityHashCode(state.players.map((p) => p.id).join()),
-      );
+      // Cryptographic entropy — never reuse a weak time-based seed.
+      rng = Random.secure();
     }
+
     final assignment = GameEngine.assignRoles(
       enginePlayers,
       random: rng,
     );
 
+    // Rebuild players from scratch — never rely on copyWith to overwrite roles.
     final updatedPlayers = state.players.map((p) {
       final dealt = assignment.roleOf(p.id);
       if (dealt == null) {
         throw StateError('No role dealt for player ${p.id}');
       }
-      return p.copyWith(
+      return PassAndPlayPlayer(
+        id: p.id,
+        name: p.name,
         role: dealt,
+        totalScore: p.totalScore,
         roundScore: 0,
+        correctGuesses: p.correctGuesses,
+        policeTags: p.policeTags,
       );
     }).toList();
 
