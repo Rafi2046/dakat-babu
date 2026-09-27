@@ -1,5 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 import '../../domain/game/game_role.dart';
 import 'audio_catalog.dart';
@@ -110,33 +111,36 @@ class AudioManager {
     }
   }
 
-  Future<void> _playOn(
-    AudioPlayer player,
-    AudioEvent event, {
-    required double volume,
-    required bool loop,
-  }) async {
+  Future<String> _resolveAsset(AudioEvent event) async {
     final preferred = AudioCatalog.pathFor(event);
     final fallback = AudioCatalog.placeholderFor(event);
     try {
-      await player.stop();
-      await player.setReleaseMode(loop ? ReleaseMode.loop : ReleaseMode.stop);
-      await player.setVolume(volume.clamp(0.0, 1.0));
-      await player.play(AssetSource(preferred));
+      await rootBundle.load('assets/$preferred');
+      return preferred;
     } catch (_) {
       if (_missingProductionPaths.add(preferred)) {
         debugPrint(
           '[AudioManager] missing $preferred — using placeholder $fallback',
         );
       }
-      try {
-        await player.stop();
-        await player.setReleaseMode(loop ? ReleaseMode.loop : ReleaseMode.stop);
-        await player.setVolume(volume.clamp(0.0, 1.0));
-        await player.play(AssetSource(fallback));
-      } catch (e) {
-        debugPrint('[AudioManager] play($event) failed: $e');
-      }
+      return fallback;
+    }
+  }
+
+  Future<void> _playOn(
+    AudioPlayer player,
+    AudioEvent event, {
+    required double volume,
+    required bool loop,
+  }) async {
+    final asset = await _resolveAsset(event);
+    try {
+      await player.stop();
+      await player.setReleaseMode(loop ? ReleaseMode.loop : ReleaseMode.stop);
+      await player.setVolume(volume.clamp(0.0, 1.0));
+      await player.play(AssetSource(asset));
+    } catch (e) {
+      debugPrint('[AudioManager] play($event) failed: $e');
     }
   }
 

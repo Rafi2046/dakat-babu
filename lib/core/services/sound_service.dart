@@ -1,9 +1,8 @@
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'audio/audio_providers.dart';
 import 'audio/audio_event.dart';
+import 'audio/audio_providers.dart';
 
 /// Legacy thin wrapper — prefer [audioManagerProvider] + [AudioEvent].
 @Deprecated('Use audioManagerProvider.play(AudioEvent...)')
@@ -11,7 +10,6 @@ class SoundService {
   SoundService(this._ref);
 
   final Ref _ref;
-  final AudioPlayer _player = AudioPlayer();
 
   Future<void> playTick() async {
     try {
@@ -45,18 +43,10 @@ class SoundService {
     }
   }
 
-  void dispose() {
-    try {
-      _player.dispose();
-    } catch (e) {
-      debugPrint('[SoundService] dispose error: $e');
-    }
-  }
+  void dispose() {}
 }
 
 /// Global provider for legacy [SoundService].
 final soundServiceProvider = Provider<SoundService>((ref) {
-  final service = SoundService(ref);
-  ref.onDispose(service.dispose);
-  return service;
+  return SoundService(ref);
 });

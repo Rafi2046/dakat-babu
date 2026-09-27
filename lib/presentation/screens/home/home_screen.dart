@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/audio/audio.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_strings_bn.dart';
@@ -34,6 +35,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     _giftClaimed = ref.read(homeDailyGiftStoreProvider).isClaimedToday();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(audioManagerProvider).play(AudioEvent.homeTheme);
+    });
+  }
+
+  @override
+  void dispose() {
+    // Fire-and-forget stop; provider may outlive this screen.
+    ref.read(audioManagerProvider).stopMusic();
+    super.dispose();
   }
 
   int _badgeCount() {
