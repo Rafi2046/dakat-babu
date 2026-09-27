@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/home_text_styles.dart';
+import '../../../core/routes/app_routes.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../viewmodels/online_game_state_provider.dart';
 import '../../widgets/parallax_lobby_background.dart';
 import '../../widgets/tactile_menu_button.dart';
 
@@ -105,7 +108,8 @@ class LobbyWaitingNotifier extends Notifier<LobbyWaitingState> {
   }
 
   void startGame() {
-    // Wire to AssignRoles / navigate when backend is ready.
+    // Prefer [OnlineGameStateNotifier.startRound] via LobbyWaitingScreen when
+    // a live [roomCode] is provided.
   }
 }
 
@@ -114,19 +118,58 @@ final lobbyWaitingProvider =
   LobbyWaitingNotifier.new,
 );
 
-/// Premium Online Waiting Room UI (mock 2/4 players).
-class LobbyWaitingScreen extends ConsumerWidget {
-  const LobbyWaitingScreen({super.key});
+/// Premium Online Waiting Room UI.
+///
+/// Pass [roomCode] to enable Supabase `start-round` + realtime navigation.
+/// Omit for mock preview (2/4 players).
+class LobbyWaitingScreen extends ConsumerStatefulWidget {
+  final String? roomCode;
+
+  const LobbyWaitingScreen({super.key, this.roomCode});
 
   static const Color _neon = AppColors.secondary;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LobbyWaitingScreen> createState() => _LobbyWaitingScreenState();
+}
+
+class _LobbyWaitingScreenState extends ConsumerState<LobbyWaitingScreen> {
+  bool get _live =>
+      widget.roomCode != null && widget.roomCode!.trim().isNotEmpty;
+
+  String get _code =>
+      _live ? widget.roomCode!.trim().toUpperCase() : 'CPDB';
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final state = ref.watch(lobbyWaitingProvider);
-    final notifier = ref.read(lobbyWaitingProvider.notifier);
-    final canStart = state.isHost && state.isFull;
-    final ctaLabel = canStart ? l10n.startGame : l10n.readyUp;
+    final mock = ref.watch(lobbyWaitingProvider);
+    final mockNotifier = ref.read(lobbyWaitingProvider.notifier);
+
+    // Live Supabase room stream → auto-navigate when status becomes playing.
+    if (_live) {
+      ref.listen<OnlineGameState>(onlineGameStateProvider(_code), (prev, next) {
+        if (next.isPlaying && !(prev?.isPlaying ?? false)) {
+          context.go(AppRoutes.gameRoundPath(_code));
+        }
+        if (next.errorMessage != null &&
+            next.errorMessage != prev?.errorMessage) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(next.errorMessage!)),
+          );
+        }
+      });
+    }
+
+    final online =
+        _live ? ref.watch(onlineGameStateProvider(_code)) : null;
+    final canStart = _live
+        ? true // Host gate enforced server-side; CTA always "Start" when live+full mock slots
+        : (mock.isHost && mock.isFull);
+    // For live rooms, Start when host taps; for mock keep Ready Up until full.
+    final showStart = _live || canStart;
+    final ctaLabel = showStart ? l10n.startGame : l10n.readyUp;
+    final starting = online?.isStarting ?? false;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -138,7 +181,7 @@ class LobbyWaitingScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _LobbyHeader(
-                  roomCode: state.roomCode,
+                  roomCode: _live ? _code : mock.roomCode,
                   waitingLabel: l10n.waitingForPlayers,
                   roomCodeLabel: l10n.roomCode,
                   tapToCopyLabel: l10n.tapToCopy,
@@ -156,30 +199,40 @@ class LobbyWaitingScreen extends ConsumerWidget {
                       childAspectRatio: 0.95,
                     ),
                     itemBuilder: (context, index) {
-                      final player = state.slots[index];
+                      final player = mock.slots[index];
                       if (player == null) {
                         return _EmptySlot(label: l10n.openSlot);
                       }
                       return _OccupiedSlot(
                         player: player,
-                        isYou: player.id == state.localPlayerId,
+                        isYou: player.id == mock.localPlayerId,
                       );
                     },
                   ),
                 ),
                 AppSpacing.gapVMd,
                 TactileMenuButton(
-                  text: ctaLabel,
-                  icon: canStart
+                  text: starting ? '...' : ctaLabel,
+                  icon: showStart
                       ? Icons.play_arrow_rounded
                       : Icons.check_circle_outline_rounded,
-                  accentColor: canStart ? AppColors.homeOnline : _neon,
-                  onTap: () {
-                    if (canStart) {
-                      notifier.startGame();
-                    } else {
-                      notifier.toggleReady();
+                  accentColor:
+                      showStart ? AppColors.homeOnline : LobbyWaitingScreen._neon,
+                  enabled: !starting,
+                  onTap: () async {
+                    if (showStart && _live) {
+                      await ref
+                          .read(onlineGameStateProvider(_code).notifier)
+                          .startRound();
+                      // Navigation happens via realtime listener when status flips.
+                      return;
                     }
+                    if (showStart && !_live) {
+                      // Mock preview — jump to game route for UI smoke test.
+                      context.go(AppRoutes.gameRoundPath(mock.roomCode));
+                      return;
+                    }
+                    mockNotifier.toggleReady();
                   },
                 ),
                 AppSpacing.gapVSm,
