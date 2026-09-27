@@ -1,0 +1,55 @@
+{
+  "@@locale": "bn",
+  "appTitle": "চোর পুলিশ ডাকাত বাবু",
+  "@appTitle": {
+    "description": "Application display title"
+  },
+  "passAndPlay": "পাস অ্যান্ড প্লে",
+  "@passAndPlay": {
+    "description": "Pass and play mode label"
+  },
+  "onlinePlay": "অনলাইন খেলুন",
+  "@onlinePlay": {
+    "description": "Online play mode label"
+  },
+  "comingSoon": "শীঘ্রই আসছে",
+  "@comingSoon": {
+    "description": "Feature not ready yet"
+  },
+  "policeCaught": "চোর ধরা পড়েছে!",
+  "@policeCaught": {
+    "description": "Police wins the round"
+  },
+  "chorEscaped": "চোর পালিয়ে গেছে!",
+  "@chorEscaped": {
+    "description": "Chor escapes the round"
+  },
+  "waitingForPlayers": "অপেক্ষা করা হচ্ছে...",
+  "@waitingForPlayers": {
+    "description": "Lobby waiting status"
+  },
+  "tapToCopy": "কপি করতে ট্যাপ করুন",
+  "@tapToCopy": {
+    "description": "Room code copy hint"
+  },
+  "startGame": "গেম শুরু করুন",
+  "@startGame": {
+    "description": "Host start game CTA"
+  },
+  "readyUp": "রেডি",
+  "@readyUp": {
+    "description": "Player ready CTA"
+  },
+  "shopSubtitle": "দোকান ও কয়েন শীঘ্রই খুলবে",
+  "@shopSubtitle": {
+    "description": "Shop coming soon subtitle"
+  },
+  "roomCode": "রুম কোড",
+  "@roomCode": {
+    "description": "Lobby room code label"
+  },
+  "openSlot": "খালি স্লট",
+  "@openSlot": {
+    "description": "Empty lobby player slot"
+  }
+}

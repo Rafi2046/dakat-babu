@@ -1,0 +1,16 @@
+{
+  "@@locale": "en",
+  "appTitle": "Chor Police Dakat Babu",
+  "passAndPlay": "Pass & Play",
+  "onlinePlay": "Play Online",
+  "comingSoon": "Coming Soon",
+  "policeCaught": "Chor has been caught!",
+  "chorEscaped": "Chor has escaped!",
+  "waitingForPlayers": "Waiting for players...",
+  "tapToCopy": "Tap to copy",
+  "startGame": "Start Game",
+  "readyUp": "Ready Up",
+  "shopSubtitle": "Shop & coins unlock soon",
+  "roomCode": "Room Code",
+  "openSlot": "Open slot"
+}
