@@ -138,6 +138,7 @@ class _ClassicSinglePlayerScreenState
               nextLabel:
                   state.isLastRound ? 'ম্যাচ শেষ দেখো' : 'পরবর্তী রাউন্ড',
               playAudio: false,
+              scoreChips: _scoreChipsFor(state),
               onNextRound: () {
                 ref
                     .read(singlePlayerEngineProvider.notifier)
@@ -181,6 +182,28 @@ class _ClassicSinglePlayerScreenState
         return const SizedBox.shrink();
     }
   }
+}
+
+List<RoundScoreChip> _scoreChipsFor(SinglePlayerState state) {
+  final result = state.result;
+  final assignment = state.assignment;
+  if (result == null || assignment == null) return const [];
+
+  final order = [
+    assignment.babuPlayerId,
+    assignment.policePlayerId,
+    assignment.dakatPlayerId,
+    assignment.chorPlayerId,
+  ];
+
+  return [
+    for (final id in order)
+      RoundScoreChip(
+        name: state.players.firstWhere((p) => p.id == id).name,
+        role: assignment.roleOf(id)!,
+        points: result.deltaFor(id),
+      ),
+  ];
 }
 
 class _ArenaHeader extends StatelessWidget {

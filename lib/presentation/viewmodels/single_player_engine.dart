@@ -363,17 +363,14 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
           policeTag: false,
         );
 
-    final winnerName =
-        updated.firstWhere((p) => p.id == result.scoreRecipientId).name;
-
     state = state.copyWith(
       phase: SinglePlayerPhase.result,
       players: updated,
       result: result,
       busy: false,
       statusMessage: result.isCorrect
-          ? 'পুলিশ জিতেছে! +1 → $winnerName'
-          : 'চোর পালিয়ে গেছে! +1 → $winnerName',
+          ? 'পুলিশ জিতেছে! Police +${result.deltaFor(result.policePlayerId)}'
+          : 'চোর পালিয়ে গেছে! Chor +${result.deltaFor(result.chorPlayerId)}',
     );
   }
 

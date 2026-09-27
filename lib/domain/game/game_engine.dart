@@ -1,17 +1,20 @@
 import 'dart:math';
 
+import 'cpdb_scoring.dart';
 import 'game_role.dart';
 import 'player_view.dart';
 
-/// Pure, authoritative game rules for Chor Police Dakat Babu (1A / 2A).
+/// Pure, authoritative game rules for Chor Police Dakat Babu.
 ///
 /// - Exactly 4 players, one of each role.
 /// - Police target = Chor only.
-/// - Correct → Police +1; Wrong → selected suspect +1.
+/// - Classic points: Babu 900 · Police 800 · Dakat 600 · Chor 400.
 /// - Everyone sees Police + Babu; Chor/Dakat stay hidden until result.
 abstract final class GameEngine {
   static const int requiredPlayers = 4;
-  static const int scoreDelta = 1;
+
+  /// @Deprecated — use [CpdbScoring] role constants.
+  static const int scoreDelta = CpdbScoring.police;
 
   /// Assigns a unique role to each of exactly four players.
   ///
@@ -94,7 +97,6 @@ abstract final class GameEngine {
       }
     }
 
-    // Suspects = everyone except Police (Babu visible but selectable).
     final suspectIds = players
         .where((p) => p.id != assignment.policePlayerId)
         .map((p) => p.id)
@@ -110,14 +112,20 @@ abstract final class GameEngine {
     );
   }
 
-  /// Resolves a Police guess. Authority-only; never trust clients.
+  /// Resolves a Police guess with classic childhood scoring.
+  ///
+  /// - Babu always +900.
+  /// - Correct (Chor): Police +800, Chor +0, Dakat +600.
+  /// - Wrong: Police +0, Chor +400, Dakat +600.
   static GuessResult resolveGuess({
     required List<EnginePlayer> players,
     required RoleAssignment assignment,
     required String suspectPlayerId,
   }) {
     final policeId = assignment.policePlayerId;
+    final babuId = assignment.babuPlayerId;
     final chorId = assignment.chorPlayerId;
+    final dakatId = assignment.dakatPlayerId;
 
     if (suspectPlayerId == policeId) {
       throw ArgumentError('Police cannot select themselves');
@@ -126,19 +134,33 @@ abstract final class GameEngine {
       throw ArgumentError('Suspect not in this game');
     }
 
-    final scores = {for (final p in players) p.id: p.score};
     final isCorrect = suspectPlayerId == chorId;
-    final recipientId = isCorrect ? policeId : suspectPlayerId;
-    scores[recipientId] = (scores[recipientId] ?? 0) + scoreDelta;
+
+    final roundDeltas = <String, int>{
+      babuId: CpdbScoring.babu,
+      dakatId: CpdbScoring.dakat,
+      policeId: isCorrect ? CpdbScoring.police : 0,
+      chorId: isCorrect ? 0 : CpdbScoring.chor,
+    };
+
+    final scoresAfter = <String, int>{
+      for (final p in players) p.id: p.score + (roundDeltas[p.id] ?? 0),
+    };
+
+    final recipientId = isCorrect ? policeId : chorId;
+    final recipientDelta = roundDeltas[recipientId] ?? 0;
 
     return GuessResult(
       isCorrect: isCorrect,
       policePlayerId: policeId,
       suspectPlayerId: suspectPlayerId,
       chorPlayerId: chorId,
+      babuPlayerId: babuId,
+      dakatPlayerId: dakatId,
       scoreRecipientId: recipientId,
-      scoreDelta: scoreDelta,
-      scoresAfter: scores,
+      scoreDelta: recipientDelta,
+      roundDeltas: roundDeltas,
+      scoresAfter: scoresAfter,
     );
   }
 

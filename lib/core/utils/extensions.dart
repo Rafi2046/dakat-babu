@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/game/cpdb_scoring.dart';
+import '../../domain/game/game_role.dart';
 import '../constants/app_colors.dart';
-import '../constants/app_constants.dart';
 import '../constants/app_images.dart';
 import '../constants/app_text_styles.dart';
 
@@ -85,17 +86,8 @@ extension GameRoleX on GameRole {
 
   String get shortName => displayName;
 
-  /// Points shown for UI hints (actual scoring is +1 via GameEngine).
-  int get points {
-    switch (this) {
-      case GameRole.police:
-        return AppConstants.policeCorrectPoints;
-      case GameRole.babu:
-      case GameRole.chor:
-      case GameRole.dakat:
-        return AppConstants.wrongGuessSuspectPoints;
-    }
-  }
+  /// Face-value points for UI hints (classic childhood table).
+  int get points => CpdbScoring.baseFor(this);
 
   Color get color {
     switch (this) {
