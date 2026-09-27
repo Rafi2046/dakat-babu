@@ -11,7 +11,6 @@ import '../../../core/utils/extensions.dart';
 import '../../../domain/game/game_role.dart';
 import '../../../domain/game/player_view.dart';
 import '../../viewmodels/single_player_engine.dart';
-import '../../widgets/parallax_lobby_background.dart';
 import '../../widgets/round_result_overlay.dart';
 import '../../widgets/tactile_3d_flip_card.dart';
 import '../../widgets/target_selection_glow.dart';
@@ -48,7 +47,6 @@ class _ClassicSinglePlayerScreenState
   Future<void> _onMysteryTap(int index) async {
     final state = ref.read(singlePlayerEngineProvider);
     if (state.phase != SinglePlayerPhase.pickCard || state.busy) return;
-    HapticFeedback.heavyImpact();
     await ref.read(singlePlayerEngineProvider.notifier).pickMysteryCard(index);
   }
 
@@ -63,45 +61,47 @@ class _ClassicSinglePlayerScreenState
       body: Stack(
         fit: StackFit.expand,
         children: [
-          if (showOverlay)
-            const ColoredBox(color: AppColors.backgroundDark)
-          else
-            ParallaxLobbyBackground(
-              child: SafeArea(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: AppSpacing.screenPadding.copyWith(bottom: 0),
-                      child: Column(
-                        children: [
-                          _ArenaHeader(
-                            onBack: () => context.pop(),
-                            round: state.currentRound,
-                            totalRounds: state.totalRounds,
-                            stage: state.stageLabel,
+          // Static arena bg — parallax was causing NaN jank + “stuck” feel.
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: AppColors.darkBackgroundGradient,
+            ),
+          ),
+          if (!showOverlay)
+            SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: AppSpacing.screenPadding.copyWith(bottom: 0),
+                    child: Column(
+                      children: [
+                        _ArenaHeader(
+                          onBack: () => context.pop(),
+                          round: state.currentRound,
+                          totalRounds: state.totalRounds,
+                          stage: state.stageLabel,
+                        ),
+                        AppSpacing.gapVSm,
+                        if (state.humanRole != null &&
+                            state.phase != SinglePlayerPhase.pickCard)
+                          _IdentityStrip(
+                            role: state.humanRole!,
+                            isPolice: state.humanIsPolice,
                           ),
-                          AppSpacing.gapVSm,
-                          if (state.humanRole != null &&
-                              state.phase != SinglePlayerPhase.pickCard)
-                            _IdentityStrip(
-                              role: state.humanRole!,
-                              isPolice: state.humanIsPolice,
-                            ),
-                          AppSpacing.gapVSm,
-                          _StageBanner(message: state.statusMessage ?? ''),
-                        ],
-                      ),
+                        AppSpacing.gapVSm,
+                        _StageBanner(message: state.statusMessage ?? ''),
+                      ],
                     ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildPhase(state),
-                      ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildPhase(state),
                     ),
-                    _LiveScoreboard(state: state),
-                  ],
-                ),
+                  ),
+                  _LiveScoreboard(state: state),
+                ],
               ),
             ),
           if (state.phase == SinglePlayerPhase.result &&
@@ -622,38 +622,42 @@ class _MysterySlotState extends State<_MysterySlot> {
 
     return Opacity(
       opacity: dimmed ? 0.32 : 1,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown:
-            widget.locked ? null : (_) => setState(() => _pressed = true),
-        onTapCancel: () => setState(() => _pressed = false),
-        onTapUp: widget.locked
-            ? null
-            : (_) {
-                setState(() => _pressed = false);
-                widget.onTap();
-              },
-        child: AnimatedScale(
-          scale: _pressed ? 0.94 : (widget.selected ? 1.04 : 1),
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOut,
-          child: Tactile3DFlipCard(
-            key: ValueKey('mystery_${widget.index}'),
-            width: widget.width,
-            height: widget.height,
-            role: widget.revealedRole,
-            isRevealed: widget.isRevealed,
-            playFlipSound: false,
-            enableTap: false,
-            duration: const Duration(milliseconds: 650),
-            backFace: _MysteryBack(
-              index: widget.index,
-              pressed: _pressed,
-              highlight: !widget.locked,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: widget.locked
+              ? null
+              : () {
+                  HapticFeedback.heavyImpact();
+                  widget.onTap();
+                },
+          onHighlightChanged: (v) {
+            if (!mounted) return;
+            setState(() => _pressed = v);
+          },
+          child: AnimatedScale(
+            scale: _pressed ? 0.95 : (widget.selected ? 1.03 : 1),
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOut,
+            child: Tactile3DFlipCard(
+              key: ValueKey('mystery_${widget.index}'),
+              width: widget.width,
+              height: widget.height,
+              role: widget.revealedRole,
+              isRevealed: widget.isRevealed,
+              playFlipSound: true,
+              enableTap: false,
+              duration: const Duration(milliseconds: 650),
+              backFace: _MysteryBack(
+                index: widget.index,
+                pressed: _pressed,
+                highlight: !widget.locked,
+              ),
+              frontFace: widget.revealedRole == null
+                  ? null
+                  : _RoleFront(role: widget.revealedRole!, accent: accent),
             ),
-            frontFace: widget.revealedRole == null
-                ? null
-                : _RoleFront(role: widget.revealedRole!, accent: accent),
           ),
         ),
       ),

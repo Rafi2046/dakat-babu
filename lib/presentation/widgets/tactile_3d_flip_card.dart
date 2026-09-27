@@ -92,10 +92,10 @@ class _Tactile3DFlipCardState extends ConsumerState<Tactile3DFlipCard>
     if (widget.duration != oldWidget.duration) {
       _controller.duration = widget.duration;
     }
+    // Drive flip whenever controlled [isRevealed] changes — even mid-animation.
     if (widget.revealedProvider == null &&
         widget.isRevealed != null &&
-        widget.isRevealed != oldWidget.isRevealed &&
-        !_isAnimating) {
+        widget.isRevealed != oldWidget.isRevealed) {
       _syncTo(widget.isRevealed!);
     }
   }
