@@ -87,8 +87,9 @@ class ScoreRow extends StatelessWidget {
 }
 
 /// Live scoreboard panel (bottom 40% of game room).
+/// Compact scoreboard docked at the bottom of a game room.
 ///
-/// Must be placed in a bounded-height parent (e.g. [Expanded]).
+/// Uses intrinsic height (no [Expanded]) so it never steals flex from cards.
 class ScoreboardPanel extends StatelessWidget {
   final List<ScoreRow> rows;
   final String title;
@@ -110,18 +111,15 @@ class ScoreboardPanel extends StatelessWidget {
         border: Border.all(color: AppColors.glassBorder),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(title, style: AppTextStyles.caption()),
           const SizedBox(height: 8),
-          Expanded(
-            child: ListView.separated(
-              padding: EdgeInsets.zero,
-              itemCount: rows.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 6),
-              itemBuilder: (context, index) => rows[index],
-            ),
-          ),
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0) const SizedBox(height: 6),
+            rows[i],
+          ],
         ],
       ),
     );
