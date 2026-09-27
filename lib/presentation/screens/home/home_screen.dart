@@ -16,6 +16,7 @@ import '../../widgets/home/home_daily_gift_banner.dart';
 import '../../widgets/home/home_featured_game_card.dart';
 import '../../widgets/home/home_mode_card.dart';
 import '../../widgets/home/home_profile_header.dart';
+import '../../widgets/shop/shop_coming_soon_view.dart';
 
 /// Home hub — dark Bangla lobby composed from section widgets.
 class HomeScreen extends ConsumerStatefulWidget {
@@ -26,8 +27,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  /// Always lobby while this screen is visible (deterministic).
-  static const HomeNavTab _selectedTab = HomeNavTab.lobby;
+  HomeNavTab _selectedTab = HomeNavTab.lobby;
 
   bool _giftClaimed = false;
 
@@ -80,6 +80,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     audio.play(AudioEvent.navigationWhoosh);
     switch (tab) {
       case HomeNavTab.lobby:
+        setState(() => _selectedTab = HomeNavTab.lobby);
         return;
       case HomeNavTab.rank:
         context.push(AppRoutes.personalScore);
@@ -91,9 +92,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         context.push(AppRoutes.badges);
         return;
       case HomeNavTab.shop:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(AppStringsBn.comingSoon)),
-        );
+        setState(() => _selectedTab = HomeNavTab.shop);
         return;
     }
   }
@@ -116,94 +115,99 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         selected: _selectedTab,
         onSelect: _onNav,
       ),
-      body: ListView(
-        padding: AppSpacing.screenPadding,
-        children: [
-          HomeProfileHeader(
-            playerName: profile.playerName,
-            level: level,
-            coins: coins,
-            soundEnabled: profile.soundEnabled,
-            onToggleSound: () async {
-              await audio.play(AudioEvent.toggleClick);
-              await profile.setSoundEnabled(!profile.soundEnabled);
-              if (!profile.soundEnabled) {
-                await audio.stopSfx();
-              }
-              if (mounted) setState(() {});
-            },
-            onSettings: () {
-              audio.play(AudioEvent.buttonTap);
-              context.push(AppRoutes.settings);
-            },
-          ),
-          AppSpacing.gapVMd,
-          const HomeFeaturedGameCard(),
-          AppSpacing.gapVMd,
-          HomeCareerStats(
-            highestScore: profile.highestScore,
-            policeWinPercent: _policeWinPercent(),
-            badgeCount: _badgeCount(),
-          ),
-          AppSpacing.gapVMd,
-          HomeModeCard(
-            title: AppStringsBn.playOnline,
-            tag: AppStringsBn.rankedTag,
-            subtitle: AppStringsBn.playOnlineSub,
-            meta: AppStringsBn.searchingStub,
-            icon: Icons.public_rounded,
-            color: AppColors.homeOnline,
-            deepColor: AppColors.homeOnlineDeep,
-            onTap: () => _openMode(AppRoutes.createJoin),
-          ),
-          AppSpacing.gapVSm,
-          HomeModeCard(
-            title: AppStringsBn.playMultiplayer,
-            tag: AppStringsBn.roomTag,
-            subtitle: AppStringsBn.playMultiplayerSub,
-            meta: AppStringsBn.playMultiplayerMeta,
-            icon: Icons.groups_rounded,
-            color: AppColors.homeMultiplayer,
-            deepColor: AppColors.homeMultiplayerDeep,
-            onTap: () => _openMode(AppRoutes.modeSelect),
-          ),
-          AppSpacing.gapVSm,
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: HomeModeCard.half(
-                  title: AppStringsBn.withComputer,
-                  subtitle: AppStringsBn.withComputerSub,
-                  meta: AppStringsBn.noInternet,
-                  icon: Icons.smart_toy_rounded,
-                  color: AppColors.homeRobot,
-                  deepColor: AppColors.homeRobotDeep,
-                  onTap: () => _openMode(AppRoutes.robot),
+      body: _selectedTab == HomeNavTab.shop
+          ? const Padding(
+              padding: AppSpacing.screenPadding,
+              child: ShopComingSoonView(),
+            )
+          : ListView(
+              padding: AppSpacing.screenPadding,
+              children: [
+                HomeProfileHeader(
+                  playerName: profile.playerName,
+                  level: level,
+                  coins: coins,
+                  soundEnabled: profile.soundEnabled,
+                  onToggleSound: () async {
+                    await audio.play(AudioEvent.toggleClick);
+                    await profile.setSoundEnabled(!profile.soundEnabled);
+                    if (!profile.soundEnabled) {
+                      await audio.stopSfx();
+                    }
+                    if (mounted) setState(() {});
+                  },
+                  onSettings: () {
+                    audio.play(AudioEvent.buttonTap);
+                    context.push(AppRoutes.settings);
+                  },
                 ),
-              ),
-              AppSpacing.gapHSm,
-              Expanded(
-                child: HomeModeCard.half(
-                  title: AppStringsBn.passAndPlay,
-                  subtitle: AppStringsBn.passAndPlaySub,
-                  meta: AppStringsBn.secretChits,
-                  icon: Icons.phone_android_rounded,
-                  color: AppColors.homePassPlay,
-                  deepColor: AppColors.homePassPlayDeep,
-                  onTap: () => _openMode(AppRoutes.passAndPlaySetup),
+                AppSpacing.gapVMd,
+                const HomeFeaturedGameCard(),
+                AppSpacing.gapVMd,
+                HomeCareerStats(
+                  highestScore: profile.highestScore,
+                  policeWinPercent: _policeWinPercent(),
+                  badgeCount: _badgeCount(),
                 ),
-              ),
-            ],
-          ),
-          AppSpacing.gapVMd,
-          HomeDailyGiftBanner(
-            claimed: _giftClaimed,
-            onCollect: _onCollectGift,
-          ),
-          AppSpacing.gapVLg,
-        ],
-      ),
+                AppSpacing.gapVMd,
+                HomeModeCard(
+                  title: AppStringsBn.playOnline,
+                  tag: AppStringsBn.rankedTag,
+                  subtitle: AppStringsBn.playOnlineSub,
+                  meta: AppStringsBn.searchingStub,
+                  icon: Icons.public_rounded,
+                  color: AppColors.homeOnline,
+                  deepColor: AppColors.homeOnlineDeep,
+                  onTap: () => _openMode(AppRoutes.createJoin),
+                ),
+                AppSpacing.gapVSm,
+                HomeModeCard(
+                  title: AppStringsBn.playMultiplayer,
+                  tag: AppStringsBn.roomTag,
+                  subtitle: AppStringsBn.playMultiplayerSub,
+                  meta: AppStringsBn.playMultiplayerMeta,
+                  icon: Icons.groups_rounded,
+                  color: AppColors.homeMultiplayer,
+                  deepColor: AppColors.homeMultiplayerDeep,
+                  onTap: () => _openMode(AppRoutes.modeSelect),
+                ),
+                AppSpacing.gapVSm,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: HomeModeCard.half(
+                        title: AppStringsBn.withComputer,
+                        subtitle: AppStringsBn.withComputerSub,
+                        meta: AppStringsBn.noInternet,
+                        icon: Icons.smart_toy_rounded,
+                        color: AppColors.homeRobot,
+                        deepColor: AppColors.homeRobotDeep,
+                        onTap: () => _openMode(AppRoutes.robot),
+                      ),
+                    ),
+                    AppSpacing.gapHSm,
+                    Expanded(
+                      child: HomeModeCard.half(
+                        title: AppStringsBn.passAndPlay,
+                        subtitle: AppStringsBn.passAndPlaySub,
+                        meta: AppStringsBn.secretChits,
+                        icon: Icons.phone_android_rounded,
+                        color: AppColors.homePassPlay,
+                        deepColor: AppColors.homePassPlayDeep,
+                        onTap: () => _openMode(AppRoutes.passAndPlaySetup),
+                      ),
+                    ),
+                  ],
+                ),
+                AppSpacing.gapVMd,
+                HomeDailyGiftBanner(
+                  claimed: _giftClaimed,
+                  onCollect: _onCollectGift,
+                ),
+                AppSpacing.gapVLg,
+              ],
+            ),
     );
   }
 }
