@@ -86,19 +86,23 @@ class AudioManager {
     }
   }
 
-  /// ROLE DISTRIBUTION: shuffle → flip → role sting.
+  /// ROLE DISTRIBUTION reveal sting.
+  ///
+  /// Only **Police** and **Babu** play audio — they are public roles.
+  /// Chor / Dakat stay silent so nearby players cannot infer the secret.
   Future<void> playRoleRevealSequence(GameRole role) async {
     if (!_sfxEnabled()) return;
-    // Police: whistle first so it is never cut by missing shuffle/flip assets.
-    if (role == GameRole.police) {
-      await play(AudioEvent.policeWhistle);
-      return;
+    switch (role) {
+      case GameRole.police:
+        await play(AudioEvent.policeWhistle);
+        return;
+      case GameRole.babu:
+        await play(AudioEvent.roleBabu);
+        return;
+      case GameRole.chor:
+      case GameRole.dakat:
+        return;
     }
-    await play(AudioEvent.roleShuffle);
-    await Future<void>.delayed(const Duration(milliseconds: 280));
-    await play(AudioEvent.roleCardFlip);
-    await Future<void>.delayed(const Duration(milliseconds: 120));
-    await play(_roleEvent(role));
   }
 
   /// Police takes the phone / starts hunting — whistle only.
@@ -120,19 +124,6 @@ class AudioManager {
     if (policeTag) {
       await Future<void>.delayed(const Duration(milliseconds: 120));
       await play(AudioEvent.policeTag);
-    }
-  }
-
-  AudioEvent _roleEvent(GameRole role) {
-    switch (role) {
-      case GameRole.police:
-        return AudioEvent.rolePolice;
-      case GameRole.chor:
-        return AudioEvent.roleChor;
-      case GameRole.dakat:
-        return AudioEvent.roleDakat;
-      case GameRole.babu:
-        return AudioEvent.roleBabu;
     }
   }
 

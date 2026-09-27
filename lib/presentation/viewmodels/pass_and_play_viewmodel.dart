@@ -304,7 +304,7 @@ class PassAndPlayViewModel extends StateNotifier<PassAndPlayState> {
     if (willReveal) {
       final role = state.currentPeekingPlayer?.role;
       if (role != null) {
-        // Fire-and-forget role sting; police also gets whistle.
+        // Public roles only (Police / Babu) — Chor/Dakat stay silent for privacy.
         _audio?.playRoleRevealSequence(role);
       }
     }
