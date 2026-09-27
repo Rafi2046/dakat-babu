@@ -39,6 +39,9 @@ class Tactile3DFlipCard extends ConsumerStatefulWidget {
   final Duration duration;
   final bool playFlipSound;
 
+  /// When false, the card ignores taps (parent drives [isRevealed]).
+  final bool enableTap;
+
   const Tactile3DFlipCard({
     super.key,
     this.role,
@@ -51,6 +54,7 @@ class Tactile3DFlipCard extends ConsumerStatefulWidget {
     this.height = 320,
     this.duration = const Duration(milliseconds: 400),
     this.playFlipSound = true,
+    this.enableTap = true,
   });
 
   @override
@@ -112,6 +116,8 @@ class _Tactile3DFlipCardState extends ConsumerState<Tactile3DFlipCard>
   }
 
   void _syncTo(bool revealed) {
+    if (!mounted) return;
+    setState(() => _isAnimating = true);
     if (revealed) {
       _controller.forward();
     } else {
@@ -120,6 +126,7 @@ class _Tactile3DFlipCardState extends ConsumerState<Tactile3DFlipCard>
   }
 
   Future<void> _handleTap() async {
+    if (!widget.enableTap) return;
     if (_isAnimating || _controller.isAnimating) return;
 
     setState(() => _isAnimating = true);
