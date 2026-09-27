@@ -3,122 +3,184 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_images.dart';
 import '../../../core/constants/app_spacing.dart';
-import '../../../core/constants/app_text_styles.dart';
+import '../../../core/constants/app_strings_bn.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/routes/app_routes.dart';
-import '../../widgets/cpdb/cpdb.dart';
+import '../../../domain/game/badge_catalog.dart';
+import '../../widgets/cpdb/app_shell.dart';
+import '../../widgets/home/home_bottom_nav.dart';
+import '../../widgets/home/home_career_stats.dart';
+import '../../widgets/home/home_daily_gift_banner.dart';
+import '../../widgets/home/home_featured_game_card.dart';
+import '../../widgets/home/home_mode_card.dart';
+import '../../widgets/home/home_profile_header.dart';
 
-/// Home hub — uses shared CPDB component library.
-class HomeScreen extends ConsumerWidget {
+/// Home hub — dark Bangla lobby composed from section widgets.
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(playerProfileStoreProvider);
-    final level = (profile.gamesPlayed ~/ 3) + 1;
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
 
-    return AppShell(
-      padding: EdgeInsets.zero,
-      topBar: TopBar(
-        playerName: profile.playerName,
-        level: level,
-        coins: profile.highestScore * 10,
-        actions: [
-          TopBarSettingsButton(
-            onPressed: () => context.push(AppRoutes.settings),
-          ),
-        ],
-      ),
-      bottomNavigation: CpdbBottomNavigation(
-        items: [
-          BottomNavItem(
-            icon: Icons.military_tech,
-            label: 'Badges',
-            onTap: () => context.push(AppRoutes.badges),
-          ),
-          BottomNavItem(
-            icon: Icons.leaderboard,
-            label: 'Score',
-            onTap: () => context.push(AppRoutes.personalScore),
-          ),
-          BottomNavItem(
-            icon: Icons.help_outline,
-            label: 'How to Play',
-            onTap: () => context.push(AppRoutes.howToPlay),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: AppSpacing.screenPadding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Image.asset(
-              AppImages.logo,
-              height: 72,
-              errorBuilder: (_, __, ___) => Text(
-                'CHOR POLICE DAKAT BABU',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.heading2(color: AppColors.raja),
-              ),
-            ),
-            AppSpacing.gapVLg,
-            Row(
-              children: [
-                _stat('Correct Guess', '${profile.correctGuesses}'),
-                AppSpacing.gapHSm,
-                _stat('Police Tag', '${profile.policeTags}'),
-                AppSpacing.gapHSm,
-                _stat('Highest', '${profile.highestScore}'),
-              ],
-            ),
-            AppSpacing.gapVXl,
-            GameButton(
-              label: 'PLAY MULTIPLAYER',
-              onPressed: () => context.push(AppRoutes.modeSelect),
-            ),
-            AppSpacing.gapVMd,
-            GameButton(
-              label: 'PLAY ONLINE',
-              onPressed: () => context.push(AppRoutes.createJoin),
-              variant: ButtonVariant.accent,
-            ),
-            AppSpacing.gapVMd,
-            GameButton(
-              label: 'PLAY WITH ROBOT',
-              onPressed: () => context.push(AppRoutes.robot),
-              variant: ButtonVariant.secondary,
-            ),
-            AppSpacing.gapVMd,
-            GameButton(
-              label: 'PLAY & PASS',
-              onPressed: () => context.push(AppRoutes.passAndPlaySetup),
-              variant: ButtonVariant.outlined,
-            ),
-          ],
-        ),
-      ),
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  /// Always lobby while this screen is visible (deterministic).
+  static const HomeNavTab _selectedTab = HomeNavTab.lobby;
+
+  bool _giftClaimed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _giftClaimed = ref.read(homeDailyGiftStoreProvider).isClaimedToday();
+  }
+
+  int _badgeCount() {
+    final store = ref.read(playerProfileStoreProvider);
+    final progress = BadgeProgress(
+      correctGuesses: store.correctGuesses,
+      policeTags: store.policeTags,
+      gamesPlayed: store.gamesPlayed,
+      wins: store.wins,
+      bestStreak: store.bestStreak,
+      highestScore: store.highestScore,
+    );
+    final unlocked = store.unlockedBadgeIds;
+    return BadgeCatalog.all
+        .where((b) => unlocked.contains(b.id) || b.isUnlocked(progress))
+        .length;
+  }
+
+  int _policeWinPercent() {
+    final store = ref.read(playerProfileStoreProvider);
+    if (store.gamesPlayed <= 0) return 0;
+    return ((store.wins / store.gamesPlayed) * 100).round();
+  }
+
+  Future<void> _onCollectGift() async {
+    final gift = ref.read(homeDailyGiftStoreProvider);
+    await gift.claimToday();
+    if (!mounted) return;
+    setState(() => _giftClaimed = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text(AppStringsBn.collected)),
     );
   }
 
-  Widget _stat(String label, String value) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: AppColors.glassFill,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.glassBorder),
-        ),
-        child: Column(
-          children: [
-            Text(value, style: AppTextStyles.heading3(color: AppColors.raja)),
-            Text(label,
-                textAlign: TextAlign.center, style: AppTextStyles.caption()),
-          ],
-        ),
+  void _onNav(HomeNavTab tab) {
+    switch (tab) {
+      case HomeNavTab.lobby:
+        return;
+      case HomeNavTab.rank:
+        context.push(AppRoutes.personalScore);
+        return;
+      case HomeNavTab.role:
+        context.push(AppRoutes.howToPlay);
+        return;
+      case HomeNavTab.badge:
+        context.push(AppRoutes.badges);
+        return;
+      case HomeNavTab.shop:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(AppStringsBn.comingSoon)),
+        );
+        return;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = ref.watch(playerProfileStoreProvider);
+    final level = (profile.gamesPlayed ~/ 3) + 1;
+    final coins = profile.highestScore * 10;
+
+    return AppShell(
+      padding: EdgeInsets.zero,
+      bottomNavigation: HomeBottomNav(
+        selected: _selectedTab,
+        onSelect: _onNav,
+      ),
+      body: ListView(
+        padding: AppSpacing.screenPadding,
+        children: [
+          HomeProfileHeader(
+            playerName: profile.playerName,
+            level: level,
+            coins: coins,
+            soundEnabled: profile.soundEnabled,
+            onToggleSound: () async {
+              await profile.setSoundEnabled(!profile.soundEnabled);
+              if (mounted) setState(() {});
+            },
+            onSettings: () => context.push(AppRoutes.settings),
+          ),
+          AppSpacing.gapVMd,
+          const HomeFeaturedGameCard(),
+          AppSpacing.gapVMd,
+          HomeCareerStats(
+            highestScore: profile.highestScore,
+            policeWinPercent: _policeWinPercent(),
+            badgeCount: _badgeCount(),
+          ),
+          AppSpacing.gapVMd,
+          HomeModeCard(
+            title: AppStringsBn.playOnline,
+            tag: AppStringsBn.rankedTag,
+            subtitle: AppStringsBn.playOnlineSub,
+            meta: AppStringsBn.searchingStub,
+            icon: Icons.public_rounded,
+            color: AppColors.homeOnline,
+            deepColor: AppColors.homeOnlineDeep,
+            onTap: () => context.push(AppRoutes.createJoin),
+          ),
+          AppSpacing.gapVSm,
+          HomeModeCard(
+            title: AppStringsBn.playMultiplayer,
+            tag: AppStringsBn.roomTag,
+            subtitle: AppStringsBn.playMultiplayerSub,
+            meta: AppStringsBn.playMultiplayerMeta,
+            icon: Icons.groups_rounded,
+            color: AppColors.homeMultiplayer,
+            deepColor: AppColors.homeMultiplayerDeep,
+            onTap: () => context.push(AppRoutes.modeSelect),
+          ),
+          AppSpacing.gapVSm,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: HomeModeCard.half(
+                  title: AppStringsBn.withComputer,
+                  subtitle: AppStringsBn.withComputerSub,
+                  meta: AppStringsBn.noInternet,
+                  icon: Icons.smart_toy_rounded,
+                  color: AppColors.homeRobot,
+                  deepColor: AppColors.homeRobotDeep,
+                  onTap: () => context.push(AppRoutes.robot),
+                ),
+              ),
+              AppSpacing.gapHSm,
+              Expanded(
+                child: HomeModeCard.half(
+                  title: AppStringsBn.passAndPlay,
+                  subtitle: AppStringsBn.passAndPlaySub,
+                  meta: AppStringsBn.secretChits,
+                  icon: Icons.phone_android_rounded,
+                  color: AppColors.homePassPlay,
+                  deepColor: AppColors.homePassPlayDeep,
+                  onTap: () => context.push(AppRoutes.passAndPlaySetup),
+                ),
+              ),
+            ],
+          ),
+          AppSpacing.gapVMd,
+          HomeDailyGiftBanner(
+            claimed: _giftClaimed,
+            onCollect: _onCollectGift,
+          ),
+          AppSpacing.gapVLg,
+        ],
       ),
     );
   }

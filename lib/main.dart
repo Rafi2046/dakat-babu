@@ -6,6 +6,7 @@ import 'core/constants/app_constants.dart';
 import 'core/di/providers.dart';
 import 'core/routes/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'data/local/home_daily_gift_store.dart';
 import 'data/local/player_profile_store.dart';
 import 'data/services/supabase_service.dart';
 
@@ -15,6 +16,7 @@ Future<void> main() async {
 
   final prefs = await SharedPreferences.getInstance();
   final profileStore = PlayerProfileStore(prefs);
+  final dailyGiftStore = HomeDailyGiftStore(prefs);
 
   final supabaseService = SupabaseService();
   await supabaseService.initialize();
@@ -24,6 +26,7 @@ Future<void> main() async {
       overrides: [
         supabaseServiceProvider.overrideWithValue(supabaseService),
         playerProfileStoreProvider.overrideWithValue(profileStore),
+        homeDailyGiftStoreProvider.overrideWithValue(dailyGiftStore),
       ],
       child: const DakatBabuApp(),
     ),

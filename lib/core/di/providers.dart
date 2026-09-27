@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../data/local/home_daily_gift_store.dart';
 import '../../data/local/player_profile_store.dart';
 import '../../data/repositories/game_repository_impl.dart';
 import '../../data/repositories/room_repository_impl.dart';
@@ -19,6 +20,11 @@ final supabaseServiceProvider = Provider<SupabaseService>((ref) {
 /// Local profile / stats / settings store. Overridden in main().
 final playerProfileStoreProvider = Provider<PlayerProfileStore>((ref) {
   throw UnimplementedError('Override playerProfileStoreProvider in main()');
+});
+
+/// Home daily gift claim store. Overridden in main().
+final homeDailyGiftStoreProvider = Provider<HomeDailyGiftStore>((ref) {
+  throw UnimplementedError('Override homeDailyGiftStoreProvider in main()');
 });
 
 final sharedPreferencesProvider = FutureProvider<SharedPreferences>((ref) {
