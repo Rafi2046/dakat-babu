@@ -105,6 +105,7 @@ flutter:
     - assets/images/ui_screens/boards/
     - assets/images/ui_screens/individual/
     - assets/sounds/
+    - assets/sounds/role/
 
   fonts:
     - family: NotoSansBengali

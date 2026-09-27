@@ -89,20 +89,21 @@ class AudioManager {
   /// ROLE DISTRIBUTION: shuffle → flip → role sting.
   Future<void> playRoleRevealSequence(GameRole role) async {
     if (!_sfxEnabled()) return;
+    // Police: whistle first so it is never cut by missing shuffle/flip assets.
+    if (role == GameRole.police) {
+      await play(AudioEvent.policeWhistle);
+      return;
+    }
     await play(AudioEvent.roleShuffle);
     await Future<void>.delayed(const Duration(milliseconds: 280));
     await play(AudioEvent.roleCardFlip);
     await Future<void>.delayed(const Duration(milliseconds: 120));
     await play(_roleEvent(role));
-    // Police gets an extra whistle sting so the arrival feels unmistakable.
-    if (role == GameRole.police) {
-      await Future<void>.delayed(const Duration(milliseconds: 80));
-      await play(AudioEvent.policeWhistle);
-    }
   }
 
   /// Police takes the phone / starts hunting — whistle only.
   Future<void> playPoliceArrive() async {
+    if (!_sfxEnabled()) return;
     await play(AudioEvent.policeWhistle);
   }
 

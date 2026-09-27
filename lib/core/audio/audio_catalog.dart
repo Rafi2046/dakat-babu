@@ -40,11 +40,11 @@ abstract final class AudioCatalog {
     // Role
     AudioEvent.roleShuffle: '$_role/role_shuffle.wav',
     AudioEvent.roleCardFlip: '$_role/role_card_flip.wav',
-    AudioEvent.rolePolice: '$_role/role_police.wav',
+    AudioEvent.rolePolice: 'role_police.wav',
     AudioEvent.roleChor: '$_role/role_chor.wav',
     AudioEvent.roleDakat: '$_role/role_dakat.wav',
     AudioEvent.roleBabu: '$_role/role_babu.wav',
-    AudioEvent.policeWhistle: '$_role/police_whistle.wav',
+    AudioEvent.policeWhistle: 'police_whistle.wav',
 
     // Gameplay
     AudioEvent.timerTick: '$_game/timer_tick.wav',
