@@ -44,6 +44,7 @@ abstract final class AudioCatalog {
     AudioEvent.roleChor: '$_role/role_chor.wav',
     AudioEvent.roleDakat: '$_role/role_dakat.wav',
     AudioEvent.roleBabu: '$_role/role_babu.wav',
+    AudioEvent.policeWhistle: '$_role/police_whistle.wav',
 
     // Gameplay
     AudioEvent.timerTick: '$_game/timer_tick.wav',
@@ -90,6 +91,7 @@ abstract final class AudioCatalog {
     AudioEvent.roleChor: placeholderFailure,
     AudioEvent.roleDakat: placeholderSting,
     AudioEvent.roleBabu: placeholderSuccess,
+    AudioEvent.policeWhistle: placeholderSting,
     AudioEvent.timerTick: placeholderTick,
     AudioEvent.timerWarning: placeholderTick,
     AudioEvent.suspectSelected: placeholderTick,

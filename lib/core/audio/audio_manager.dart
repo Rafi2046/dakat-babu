@@ -94,6 +94,16 @@ class AudioManager {
     await play(AudioEvent.roleCardFlip);
     await Future<void>.delayed(const Duration(milliseconds: 120));
     await play(_roleEvent(role));
+    // Police gets an extra whistle sting so the arrival feels unmistakable.
+    if (role == GameRole.police) {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      await play(AudioEvent.policeWhistle);
+    }
+  }
+
+  /// Police takes the phone / starts hunting — whistle only.
+  Future<void> playPoliceArrive() async {
+    await play(AudioEvent.policeWhistle);
   }
 
   /// POLICE GUESS: confirm → lock → silence → result (+ optional tag).

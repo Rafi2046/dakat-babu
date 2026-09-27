@@ -24,6 +24,9 @@ enum AudioEvent {
   roleDakat,
   roleBabu,
 
+  /// Short police whistle — when Police arrives / takes the turn.
+  policeWhistle,
+
   // Gameplay
   timerTick,
   timerWarning,

@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/audio/audio.dart';
 import '../../core/constants/app_constants.dart';
 import '../../domain/game/game_engine.dart';
 import '../../domain/game/game_phase.dart';
@@ -199,14 +200,22 @@ class PassAndPlayState {
 
 /// ViewModel coordinating Pass & Pass using [GameEngine].
 class PassAndPlayViewModel extends StateNotifier<PassAndPlayState> {
-  PassAndPlayViewModel({Random? random}) : super(const PassAndPlayState()) {
-    // [random] kept for tests that inject determinism via assignRoles callers.
+  PassAndPlayViewModel({Ref? ref, Random? random})
+      : _ref = ref,
+        super(const PassAndPlayState()) {
     if (random != null) {
       _testRandom = random;
     }
   }
 
+  final Ref? _ref;
   Random? _testRandom;
+
+  AudioManager? get _audio {
+    final ref = _ref;
+    if (ref == null) return null;
+    return ref.read(audioManagerProvider);
+  }
 
   void initMatch({
     required List<String> playerNames,
@@ -291,7 +300,15 @@ class PassAndPlayViewModel extends StateNotifier<PassAndPlayState> {
   }
 
   void toggleCardReveal() {
+    final willReveal = !state.isCardRevealed;
     state = state.copyWith(isCardRevealed: !state.isCardRevealed);
+    if (willReveal) {
+      final role = state.currentPeekingPlayer?.role;
+      if (role != null) {
+        // Fire-and-forget role sting; police also gets whistle.
+        _audio?.playRoleRevealSequence(role);
+      }
+    }
   }
 
   void finishPeekingCurrentPlayer() {
@@ -309,6 +326,8 @@ class PassAndPlayViewModel extends StateNotifier<PassAndPlayState> {
         stage: PassAndPlayStage.handToPolice,
         phase: GamePhase.policeTurn,
       );
+      // Police arrives — whistle.
+      _audio?.playPoliceArrive();
     }
   }
 
@@ -318,6 +337,7 @@ class PassAndPlayViewModel extends StateNotifier<PassAndPlayState> {
       phase: GamePhase.suspectSelection,
       accusedPlayerId: null,
     );
+    _audio?.playPoliceArrive();
   }
 
   void selectSuspect(String accusedPlayerId) {
@@ -420,5 +440,5 @@ class PassAndPlayViewModel extends StateNotifier<PassAndPlayState> {
 
 final passAndPlayViewModelProvider =
     StateNotifierProvider<PassAndPlayViewModel, PassAndPlayState>((ref) {
-  return PassAndPlayViewModel();
+  return PassAndPlayViewModel(ref: ref);
 });
