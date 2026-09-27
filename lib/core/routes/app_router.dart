@@ -9,6 +9,7 @@ import '../../presentation/screens/home/create_join_screen.dart';
 import '../../presentation/screens/home/home_screen.dart';
 import '../../presentation/screens/how_to_play/how_to_play_screen.dart';
 import '../../presentation/screens/lobby/lobby_screen.dart';
+import '../../presentation/screens/lobby/lobby_waiting_screen.dart';
 import '../../presentation/screens/mode_select/mode_select_screen.dart';
 import '../../presentation/screens/pass_and_play/pass_and_play_game_screen.dart';
 import '../../presentation/screens/pass_and_play/pass_and_play_setup_screen.dart';
@@ -85,6 +86,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.passAndPlayGame,
         name: AppRoutes.passAndPlayGameName,
         builder: (context, state) => const PassAndPlayGameScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.lobbyWaiting,
+        name: AppRoutes.lobbyWaitingName,
+        builder: (context, state) => const LobbyWaitingScreen(),
       ),
       GoRoute(
         path: AppRoutes.lobby,
