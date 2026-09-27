@@ -41,13 +41,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
-  @override
-  void dispose() {
-    // Fire-and-forget stop; provider may outlive this screen.
-    ref.read(audioManagerProvider).stopMusic();
-    super.dispose();
-  }
-
   int _badgeCount() {
     final store = ref.read(playerProfileStoreProvider);
     final progress = BadgeProgress(
@@ -71,6 +64,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _onCollectGift() async {
+    final audio = ref.read(audioManagerProvider);
+    await audio.play(AudioEvent.coinSoft);
     final gift = ref.read(homeDailyGiftStoreProvider);
     await gift.claimToday();
     if (!mounted) return;
@@ -81,6 +76,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _onNav(HomeNavTab tab) {
+    final audio = ref.read(audioManagerProvider);
+    audio.play(AudioEvent.navigationWhoosh);
     switch (tab) {
       case HomeNavTab.lobby:
         return;
@@ -101,11 +98,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
+  void _openMode(String route) {
+    ref.read(audioManagerProvider).play(AudioEvent.cardTap);
+    context.push(route);
+  }
+
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(playerProfileStoreProvider);
     final level = (profile.gamesPlayed ~/ 3) + 1;
     final coins = profile.highestScore * 10;
+    final audio = ref.read(audioManagerProvider);
 
     return AppShell(
       padding: EdgeInsets.zero,
@@ -122,10 +125,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             coins: coins,
             soundEnabled: profile.soundEnabled,
             onToggleSound: () async {
+              await audio.play(AudioEvent.toggleClick);
               await profile.setSoundEnabled(!profile.soundEnabled);
+              if (!profile.soundEnabled) {
+                await audio.stopSfx();
+              }
               if (mounted) setState(() {});
             },
-            onSettings: () => context.push(AppRoutes.settings),
+            onSettings: () {
+              audio.play(AudioEvent.buttonTap);
+              context.push(AppRoutes.settings);
+            },
           ),
           AppSpacing.gapVMd,
           const HomeFeaturedGameCard(),
@@ -144,7 +154,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: Icons.public_rounded,
             color: AppColors.homeOnline,
             deepColor: AppColors.homeOnlineDeep,
-            onTap: () => context.push(AppRoutes.createJoin),
+            onTap: () => _openMode(AppRoutes.createJoin),
           ),
           AppSpacing.gapVSm,
           HomeModeCard(
@@ -155,7 +165,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: Icons.groups_rounded,
             color: AppColors.homeMultiplayer,
             deepColor: AppColors.homeMultiplayerDeep,
-            onTap: () => context.push(AppRoutes.modeSelect),
+            onTap: () => _openMode(AppRoutes.modeSelect),
           ),
           AppSpacing.gapVSm,
           Row(
@@ -169,7 +179,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   icon: Icons.smart_toy_rounded,
                   color: AppColors.homeRobot,
                   deepColor: AppColors.homeRobotDeep,
-                  onTap: () => context.push(AppRoutes.robot),
+                  onTap: () => _openMode(AppRoutes.robot),
                 ),
               ),
               AppSpacing.gapHSm,
@@ -181,7 +191,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   icon: Icons.phone_android_rounded,
                   color: AppColors.homePassPlay,
                   deepColor: AppColors.homePassPlayDeep,
-                  onTap: () => context.push(AppRoutes.passAndPlaySetup),
+                  onTap: () => _openMode(AppRoutes.passAndPlaySetup),
                 ),
               ),
             ],

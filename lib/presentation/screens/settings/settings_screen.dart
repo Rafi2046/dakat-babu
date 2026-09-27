@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/audio/audio.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../widgets/cpdb/cpdb.dart';
@@ -35,6 +36,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             value: store.musicEnabled,
             onChanged: (v) async {
               await store.setMusicEnabled(v);
+              final audio = ref.read(audioManagerProvider);
+              await audio.play(AudioEvent.toggleClick);
+              if (!v) {
+                await audio.stopMusic();
+              } else {
+                await audio.play(AudioEvent.homeTheme);
+              }
               setState(() {});
             },
           ),
@@ -43,6 +51,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             value: store.soundEnabled,
             onChanged: (v) async {
               await store.setSoundEnabled(v);
+              final audio = ref.read(audioManagerProvider);
+              if (v) {
+                await audio.play(AudioEvent.toggleClick);
+              } else {
+                await audio.stopSfx();
+              }
               setState(() {});
             },
           ),
