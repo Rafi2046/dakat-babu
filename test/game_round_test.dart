@@ -20,30 +20,58 @@ void main() {
     late SubmitGuessUseCase submitGuessUseCase;
 
     setUp(() {
-      supabaseService = SupabaseService(); // Uses in-memory mock fallback
+      supabaseService = SupabaseService();
       gameRepository = GameRepositoryImpl(supabaseService: supabaseService);
       roomRepository = RoomRepositoryImpl(supabaseService: supabaseService);
       assignRolesUseCase = AssignRolesUseCase(gameRepository);
       submitGuessUseCase = SubmitGuessUseCase(gameRepository);
     });
 
-    test('Full 4-player round cycle: role assignment, guessing, points, and next round', () async {
+    test(
+        'Full 4-player round cycle: role assignment, guessing, points, and next round',
+        () async {
       const roomCode = 'RND101';
       final now = DateTime.now();
 
-      // 1. Setup 4 players in the room
       final List<PlayerModel> players = [
-        PlayerModel(id: 'p1', roomCode: roomCode, name: 'Akbar', isHost: true, score: 0, createdAt: now),
-        PlayerModel(id: 'p2', roomCode: roomCode, name: 'Birbal', isHost: false, score: 0, createdAt: now),
-        PlayerModel(id: 'p3', roomCode: roomCode, name: 'Man Singh', isHost: false, score: 0, createdAt: now),
-        PlayerModel(id: 'p4', roomCode: roomCode, name: 'Tansen', isHost: false, score: 0, createdAt: now),
+        PlayerModel(
+          id: 'p1',
+          roomCode: roomCode,
+          name: 'Akbar',
+          isHost: true,
+          score: 0,
+          createdAt: now,
+        ),
+        PlayerModel(
+          id: 'p2',
+          roomCode: roomCode,
+          name: 'Birbal',
+          isHost: false,
+          score: 0,
+          createdAt: now,
+        ),
+        PlayerModel(
+          id: 'p3',
+          roomCode: roomCode,
+          name: 'Man Singh',
+          isHost: false,
+          score: 0,
+          createdAt: now,
+        ),
+        PlayerModel(
+          id: 'p4',
+          roomCode: roomCode,
+          name: 'Tansen',
+          isHost: false,
+          score: 0,
+          createdAt: now,
+        ),
       ];
 
       for (final p in players) {
         await supabaseService.insert(AppConstants.playersTable, p.toJson());
       }
 
-      // 2. Start Round 1 (Assign roles)
       final round1 = await assignRolesUseCase(
         roomCode: roomCode,
         players: players,
@@ -54,16 +82,14 @@ void main() {
       expect(round1.roundNumber, equals(1));
       expect(round1.status, equals(RoundStatus.roleReveal));
 
-      // Verify all 4 unique role assignments
       final rolePlayerIds = {
-        round1.rajaPlayerId,
-        round1.mantriPlayerId,
+        round1.babuPlayerId,
+        round1.dakatPlayerId,
         round1.policePlayerId,
         round1.chorPlayerId,
       };
       expect(rolePlayerIds.length, equals(4));
 
-      // 3. Test GameRoundViewModel
       final roundViewModel = GameRoundViewModel(
         roomCode: roomCode,
         gameRepository: gameRepository,
@@ -71,16 +97,13 @@ void main() {
         submitGuessUseCase: submitGuessUseCase,
       );
 
-      // Card reveal flip toggle
       expect(roundViewModel.state.isCardRevealed, isFalse);
       roundViewModel.toggleCardReveal();
       expect(roundViewModel.state.isCardRevealed, isTrue);
 
-      // Select suspect
       roundViewModel.selectSuspect(round1.chorPlayerId);
       expect(roundViewModel.state.selectedSuspectId, equals(round1.chorPlayerId));
 
-      // 4. Police submits guess (accusing the Chor correctly)
       final guessResult = await submitGuessUseCase(
         roundId: round1.id,
         roomCode: roomCode,
@@ -91,16 +114,15 @@ void main() {
       expect(guessResult.status, equals(RoundStatus.completed));
       expect(guessResult.policeGuessPlayerId, equals(round1.chorPlayerId));
 
-      // 5. Verify score accumulation
-      final rajaPlayer = await supabaseService.fetchSingle(
+      final babuPlayer = await supabaseService.fetchSingle(
         AppConstants.playersTable,
         matchField: 'id',
-        matchValue: round1.rajaPlayerId,
+        matchValue: round1.babuPlayerId,
       );
-      final mantriPlayer = await supabaseService.fetchSingle(
+      final dakatPlayer = await supabaseService.fetchSingle(
         AppConstants.playersTable,
         matchField: 'id',
-        matchValue: round1.mantriPlayerId,
+        matchValue: round1.dakatPlayerId,
       );
       final policePlayer = await supabaseService.fetchSingle(
         AppConstants.playersTable,
@@ -113,12 +135,12 @@ void main() {
         matchValue: round1.chorPlayerId,
       );
 
-      expect(rajaPlayer?['score'], equals(AppConstants.rajaPoints)); // +1000
-      expect(mantriPlayer?['score'], equals(AppConstants.mantriPoints)); // +800
-      expect(policePlayer?['score'], equals(AppConstants.policeCorrectPoints)); // +500
-      expect(chorPlayer?['score'], equals(AppConstants.chorCaughtPoints)); // 0
+      // CPDB +1: only Police scores on a correct catch.
+      expect(policePlayer?['score'], equals(AppConstants.policeCorrectPoints));
+      expect(chorPlayer?['score'], equals(0));
+      expect(babuPlayer?['score'], equals(0));
+      expect(dakatPlayer?['score'], equals(0));
 
-      // 6. Test ResultsViewModel and next round advancement
       final resultsViewModel = ResultsViewModel(
         roomCode: roomCode,
         gameRepository: gameRepository,
@@ -126,7 +148,6 @@ void main() {
         assignRolesUseCase: assignRolesUseCase,
       );
 
-      // Advance to Round 2
       final nextRoundStarted = await resultsViewModel.startNextRound();
       expect(nextRoundStarted, isTrue);
 
