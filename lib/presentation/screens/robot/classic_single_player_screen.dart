@@ -9,17 +9,23 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/home_text_styles.dart';
 import '../../../core/utils/extensions.dart';
 import '../../../domain/game/game_role.dart';
+import '../../../domain/game/player_view.dart';
 import '../../viewmodels/single_player_engine.dart';
 import '../../widgets/parallax_lobby_background.dart';
 import '../../widgets/round_result_overlay.dart';
 import '../../widgets/tactile_3d_flip_card.dart';
 import '../../widgets/target_selection_glow.dart';
 
-/// Classic Vs Computer — face-down mystery cards, random role draw.
+/// Classic Vs Computer arena — mystery draw, accusation, live scoreboard.
 class ClassicSinglePlayerScreen extends ConsumerStatefulWidget {
   final String humanName;
+  final int totalRounds;
 
-  const ClassicSinglePlayerScreen({super.key, this.humanName = 'You'});
+  const ClassicSinglePlayerScreen({
+    super.key,
+    this.humanName = 'You',
+    this.totalRounds = 5,
+  });
 
   @override
   ConsumerState<ClassicSinglePlayerScreen> createState() =>
@@ -32,16 +38,16 @@ class _ClassicSinglePlayerScreenState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(singlePlayerEngineProvider.notifier)
-          .startMatch(humanName: widget.humanName);
+      ref.read(singlePlayerEngineProvider.notifier).startMatch(
+            humanName: widget.humanName,
+            totalRounds: widget.totalRounds,
+          );
     });
   }
 
   Future<void> _onMysteryTap(int index) async {
     final state = ref.read(singlePlayerEngineProvider);
     if (state.phase != SinglePlayerPhase.pickCard || state.busy) return;
-
     HapticFeedback.heavyImpact();
     await ref.read(singlePlayerEngineProvider.notifier).pickMysteryCard(index);
   }
@@ -49,46 +55,79 @@ class _ClassicSinglePlayerScreenState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(singlePlayerEngineProvider);
+    final showOverlay = state.phase == SinglePlayerPhase.result ||
+        state.phase == SinglePlayerPhase.matchOver;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
-      body: state.phase == SinglePlayerPhase.result
-          // Drop parallax under the result overlay — sensors + layers cause jank.
-          ? Stack(
-              fit: StackFit.expand,
-              children: [
-                const ColoredBox(color: AppColors.backgroundDark),
-                if (state.resultWinner != null)
-                  RoundResultOverlay(
-                    winner: state.resultWinner!,
-                    headlineOverride: state.statusMessage,
-                    nextLabel: 'আবার খেলো',
-                    playAudio: false,
-                    onNextRound: () {
-                      ref
-                          .read(singlePlayerEngineProvider.notifier)
-                          .playAgain();
-                    },
-                  ),
-              ],
-            )
-          : ParallaxLobbyBackground(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (showOverlay)
+            const ColoredBox(color: AppColors.backgroundDark)
+          else
+            ParallaxLobbyBackground(
               child: SafeArea(
-                child: Padding(
-                  padding: AppSpacing.screenPadding,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _Header(onBack: () => context.pop()),
-                      AppSpacing.gapVSm,
-                      _StatusBanner(message: state.statusMessage ?? ''),
-                      AppSpacing.gapVMd,
-                      Expanded(child: _buildPhase(state)),
-                    ],
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: AppSpacing.screenPadding.copyWith(bottom: 0),
+                      child: Column(
+                        children: [
+                          _ArenaHeader(
+                            onBack: () => context.pop(),
+                            round: state.currentRound,
+                            totalRounds: state.totalRounds,
+                            stage: state.stageLabel,
+                          ),
+                          AppSpacing.gapVSm,
+                          if (state.humanRole != null &&
+                              state.phase != SinglePlayerPhase.pickCard)
+                            _IdentityStrip(
+                              role: state.humanRole!,
+                              isPolice: state.humanIsPolice,
+                            ),
+                          AppSpacing.gapVSm,
+                          _StageBanner(message: state.statusMessage ?? ''),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildPhase(state),
+                      ),
+                    ),
+                    _LiveScoreboard(state: state),
+                  ],
                 ),
               ),
             ),
+          if (state.phase == SinglePlayerPhase.result &&
+              state.resultWinner != null)
+            RoundResultOverlay(
+              winner: state.resultWinner!,
+              headlineOverride: state.statusMessage,
+              nextLabel:
+                  state.isLastRound ? 'ম্যাচ শেষ দেখো' : 'পরবর্তী রাউন্ড',
+              playAudio: false,
+              onNextRound: () {
+                ref
+                    .read(singlePlayerEngineProvider.notifier)
+                    .continueAfterResult();
+              },
+            ),
+          if (state.phase == SinglePlayerPhase.matchOver)
+            _MatchOverOverlay(
+              state: state,
+              onPlayAgain: () {
+                ref.read(singlePlayerEngineProvider.notifier).playAgain();
+              },
+              onExit: () => context.pop(),
+            ),
+        ],
+      ),
     );
   }
 
@@ -103,7 +142,7 @@ class _ClassicSinglePlayerScreenState
       case SinglePlayerPhase.awaitingGuess:
         return TargetSelectionGlow(
           isActive: true,
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(4),
           child: _BotTargetGrid(
             state: state,
             onGuess: (id) => ref
@@ -112,70 +151,386 @@ class _ClassicSinglePlayerScreenState
           ),
         );
       case SinglePlayerPhase.result:
+      case SinglePlayerPhase.matchOver:
         return const SizedBox.shrink();
     }
   }
 }
 
-class _Header extends StatelessWidget {
+class _ArenaHeader extends StatelessWidget {
   final VoidCallback onBack;
+  final int round;
+  final int totalRounds;
+  final String stage;
 
-  const _Header({required this.onBack});
+  const _ArenaHeader({
+    required this.onBack,
+    required this.round,
+    required this.totalRounds,
+    required this.stage,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        IconButton(
-          onPressed: onBack,
-          icon: const Icon(Icons.arrow_back_rounded),
-          color: AppColors.textLightPrimary,
+        Row(
+          children: [
+            IconButton(
+              onPressed: onBack,
+              icon: const Icon(Icons.arrow_back_rounded),
+              color: AppColors.textLightPrimary,
+            ),
+            Expanded(
+              child: Text(
+                'Vs Computer',
+                textAlign: TextAlign.center,
+                style: HomeTextStyles.hero(color: AppColors.textLightPrimary),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.homeOnline.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.homeOnline),
+              ),
+              child: Text(
+                'BOT',
+                style: HomeTextStyles.caption(color: AppColors.homeOnline),
+              ),
+            ),
+          ],
         ),
-        Expanded(
-          child: Text(
-            'Vs Computer',
-            textAlign: TextAlign.center,
-            style: HomeTextStyles.hero(color: AppColors.textLightPrimary),
-          ),
+        Row(
+          children: [
+            _Pill(
+              label: 'ROUND $round / $totalRounds',
+              color: AppColors.chor,
+            ),
+            const Spacer(),
+            Text(
+              'Stage: $stage',
+              style: HomeTextStyles.caption(color: AppColors.textLightSecondary),
+            ),
+          ],
         ),
-        const SizedBox(width: 48),
       ],
     );
   }
 }
 
-class _StatusBanner extends StatelessWidget {
-  final String message;
+class _Pill extends StatelessWidget {
+  final String label;
+  final Color color;
 
-  const _StatusBanner({required this.message});
+  const _Pill({required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: AppColors.surfaceElevatedDark.withValues(alpha: 0.85),
-        border: Border.all(
-          color: AppColors.secondary.withValues(alpha: 0.45),
+        color: color.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.7)),
+      ),
+      child: Text(
+        label,
+        style: HomeTextStyles.caption(color: color).copyWith(
+          fontWeight: FontWeight.w700,
         ),
-        boxShadow: AppColors.darkNeonGlow(AppColors.secondary, alpha: 0.22),
+      ),
+    );
+  }
+}
+
+class _IdentityStrip extends StatelessWidget {
+  final GameRole role;
+  final bool isPolice;
+
+  const _IdentityStrip({required this.role, required this.isPolice});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: AppColors.surfaceElevatedDark,
+        border: Border.all(color: role.color.withValues(alpha: 0.55)),
+        boxShadow: AppColors.darkNeonGlow(role.color, alpha: 0.18),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: role.color.withValues(alpha: 0.25),
+            child: Icon(Icons.person, size: 18, color: role.color),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'YOUR IDENTITY: ${role.label}',
+              style: HomeTextStyles.body(color: AppColors.textLightPrimary),
+            ),
+          ),
+          if (isPolice)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.police.withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Catch Chor!',
+                style: HomeTextStyles.caption(color: AppColors.police),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StageBanner extends StatelessWidget {
+  final String message;
+
+  const _StageBanner({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: AppColors.surfaceElevatedDark.withValues(alpha: 0.9),
+        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.4)),
       ),
       child: Text(
         message,
         textAlign: TextAlign.center,
-        style: HomeTextStyles.title(color: AppColors.secondary).copyWith(
-          shadows: [
-            Shadow(
-              color: AppColors.secondary.withValues(alpha: 0.75),
-              blurRadius: 14,
-            ),
-          ],
+        style: HomeTextStyles.body(color: AppColors.secondary),
+      ),
+    );
+  }
+}
+
+/// Always-visible live scoreboard (arena footer).
+class _LiveScoreboard extends StatelessWidget {
+  final SinglePlayerState state;
+
+  const _LiveScoreboard({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final ranked = state.rankedPlayers;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        border: Border(
+          top: BorderSide(color: AppColors.borderDark.withValues(alpha: 0.9)),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.45),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.leaderboard_rounded,
+                      size: 16, color: AppColors.accent),
+                  const SizedBox(width: 6),
+                  Text(
+                    'LIVE SCOREBOARD',
+                    style: HomeTextStyles.caption(color: AppColors.accent)
+                        .copyWith(fontWeight: FontWeight.w800),
+                  ),
+                  const Spacer(),
+                  Text(
+                    'Police +1 · Wrong → suspect +1',
+                    style: HomeTextStyles.caption(
+                      color: AppColors.textLightMuted,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              for (var i = 0; i < ranked.length; i++)
+                _ScoreRow(
+                  rank: i + 1,
+                  player: ranked[i],
+                  isYou: ranked[i].id == state.humanId,
+                  role: state.roleOf(ranked[i].id),
+                ),
+            ],
+          ),
         ),
       ),
-    )
-        .animate()
-        .fadeIn(duration: 280.ms);
+    );
+  }
+}
+
+class _ScoreRow extends StatelessWidget {
+  final int rank;
+  final EnginePlayer player;
+  final bool isYou;
+  final GameRole? role;
+
+  const _ScoreRow({
+    required this.rank,
+    required this.player,
+    required this.isYou,
+    required this.role,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final badge = role?.label ?? (isYou ? 'You' : 'Bot');
+    final badgeColor = role?.color ?? AppColors.textLightMuted;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 22,
+            child: Text(
+              '#$rank',
+              style: HomeTextStyles.caption(color: AppColors.textLightMuted),
+            ),
+          ),
+          Expanded(
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    player.name,
+                    overflow: TextOverflow.ellipsis,
+                    style: HomeTextStyles.body(
+                      color: isYou
+                          ? AppColors.secondary
+                          : AppColors.textLightPrimary,
+                    ),
+                  ),
+                ),
+                if (isYou) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    '(You)',
+                    style: HomeTextStyles.caption(color: AppColors.secondary),
+                  ),
+                ],
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: badgeColor.withValues(alpha: 0.45),
+                    ),
+                  ),
+                  child: Text(
+                    badge,
+                    style: HomeTextStyles.caption(color: badgeColor),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            '${player.score} pts',
+            style: HomeTextStyles.body(color: AppColors.accent),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MatchOverOverlay extends StatelessWidget {
+  final SinglePlayerState state;
+  final VoidCallback onPlayAgain;
+  final VoidCallback onExit;
+
+  const _MatchOverOverlay({
+    required this.state,
+    required this.onPlayAgain,
+    required this.onExit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final leader = state.rankedPlayers.first;
+    return Material(
+      color: const Color(0xE60B0E14),
+      child: SafeArea(
+        child: Padding(
+          padding: AppSpacing.screenPadding,
+          child: Column(
+            children: [
+              const Spacer(),
+              Text(
+                'ম্যাচ শেষ!',
+                style: HomeTextStyles.hero(color: AppColors.accent).copyWith(
+                  fontSize: 34,
+                  shadows: [
+                    Shadow(
+                      color: AppColors.accent.withValues(alpha: 0.7),
+                      blurRadius: 18,
+                    ),
+                  ],
+                ),
+              ),
+              AppSpacing.gapVMd,
+              Text(
+                'বিজয়ী: ${leader.name} · ${leader.score} pts',
+                style: HomeTextStyles.title(color: AppColors.textLightPrimary),
+              ),
+              AppSpacing.gapVLg,
+              _LiveScoreboard(state: state),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: onPlayAgain,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.secondary,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: Text(
+                    'আবার খেলো',
+                    style: HomeTextStyles.body(color: AppColors.backgroundDark),
+                  ),
+                ),
+              ),
+              AppSpacing.gapVSm,
+              TextButton(
+                onPressed: onExit,
+                child: Text(
+                  'মেনুতে ফিরে যাও',
+                  style: HomeTextStyles.body(color: AppColors.textLightSecondary),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -192,9 +547,9 @@ class _MysteryCardGrid extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        const gap = 14.0;
-        final cardW = ((constraints.maxWidth - gap) / 2).clamp(130.0, 200.0);
-        final cardH = ((constraints.maxHeight - gap) / 2).clamp(170.0, 260.0);
+        const gap = 12.0;
+        final cardW = ((constraints.maxWidth - gap) / 2).clamp(120.0, 180.0);
+        final cardH = ((constraints.maxHeight - gap) / 2).clamp(150.0, 220.0);
 
         return Center(
           child: SizedBox(
@@ -269,9 +624,8 @@ class _MysterySlotState extends State<_MysterySlot> {
       opacity: dimmed ? 0.32 : 1,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTapDown: widget.locked
-            ? null
-            : (_) => setState(() => _pressed = true),
+        onTapDown:
+            widget.locked ? null : (_) => setState(() => _pressed = true),
         onTapCancel: () => setState(() => _pressed = false),
         onTapUp: widget.locked
             ? null
@@ -327,16 +681,8 @@ class _MysteryBack extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: pressed
-              ? const [
-                  Color(0xFF1A1E28),
-                  Color(0xFF0E1118),
-                  Color(0xFF080A10),
-                ]
-              : const [
-                  Color(0xFF3A4258),
-                  Color(0xFF1F2432),
-                  Color(0xFF12161F),
-                ],
+              ? const [Color(0xFF1A1E28), Color(0xFF0E1118), Color(0xFF080A10)]
+              : const [Color(0xFF3A4258), Color(0xFF1F2432), Color(0xFF12161F)],
         ),
         border: Border.all(
           color: highlight
@@ -347,88 +693,34 @@ class _MysteryBack extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.55),
-            blurRadius: pressed ? 6 : 16,
-            offset: Offset(0, pressed ? 3 : 10),
+            blurRadius: pressed ? 6 : 14,
+            offset: Offset(0, pressed ? 3 : 8),
           ),
           if (highlight)
             BoxShadow(
-              color: AppColors.secondary.withValues(alpha: 0.28),
-              blurRadius: 18,
-              spreadRadius: 1,
+              color: AppColors.secondary.withValues(alpha: 0.25),
+              blurRadius: 14,
             ),
-          // Emboss highlight.
-          BoxShadow(
-            color: Colors.white.withValues(alpha: pressed ? 0.04 : 0.1),
-            blurRadius: 0,
-            offset: const Offset(-1.5, -1.5),
-          ),
         ],
       ),
-      child: Stack(
-        children: [
-          // Diagonal sheen.
-          Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(22),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.white.withValues(alpha: 0.08),
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.2),
-                    ],
-                  ),
-                ),
-              ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.help_outline_rounded,
+                color: AppColors.secondary.withValues(alpha: 0.9), size: 28),
+            const SizedBox(height: 6),
+            Text(
+              '?',
+              style: HomeTextStyles.hero(color: AppColors.textLightPrimary)
+                  .copyWith(fontSize: 34),
             ),
-          ),
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.surfaceElevatedDark,
-                    border: Border.all(
-                      color: AppColors.secondary.withValues(alpha: 0.6),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.secondary.withValues(alpha: 0.35),
-                        blurRadius: 12,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.help_outline_rounded,
-                    color: AppColors.secondary,
-                    size: 26,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  '?',
-                  style: HomeTextStyles.hero(color: AppColors.textLightPrimary)
-                      .copyWith(fontSize: 40, height: 1),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'কার্ড ${index + 1}',
-                  style: HomeTextStyles.caption(
-                    color: AppColors.textLightSecondary,
-                  ),
-                ),
-              ],
+            Text(
+              'কার্ড ${index + 1}',
+              style: HomeTextStyles.caption(color: AppColors.textLightSecondary),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -460,16 +752,11 @@ class _RoleFront extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.style_rounded, color: accent, size: 44),
-          const SizedBox(height: 12),
+          Icon(Icons.style_rounded, color: accent, size: 40),
+          const SizedBox(height: 8),
           Text(
             role.label,
             style: HomeTextStyles.hero(color: AppColors.textLightPrimary),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'তোমার রোল',
-            style: HomeTextStyles.caption(color: AppColors.textLightSecondary),
           ),
         ],
       ),
@@ -488,36 +775,20 @@ class _PoliceSearchingView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.local_police_rounded,
-            size: 64,
-            color: AppColors.police,
-          )
+          const Icon(Icons.local_police_rounded,
+                  size: 56, color: AppColors.police)
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .scale(
                 begin: const Offset(0.92, 0.92),
-                end: const Offset(1.08, 1.08),
+                end: const Offset(1.06, 1.06),
                 duration: 900.ms,
               ),
-          AppSpacing.gapVLg,
+          AppSpacing.gapVMd,
           Text(
             message.isEmpty ? 'পুলিশ চোর খুঁজছে...' : message,
             textAlign: TextAlign.center,
-            style: HomeTextStyles.hero(color: AppColors.police).copyWith(
-              shadows: [
-                Shadow(
-                  color: AppColors.police.withValues(alpha: 0.7),
-                  blurRadius: 18,
-                ),
-              ],
-            ),
-          )
-              .animate(onPlay: (c) => c.repeat(reverse: true))
-              .shimmer(
-                duration: 1600.ms,
-                color: Colors.white.withValues(alpha: 0.55),
-              )
-              .fade(begin: 0.65, end: 1, duration: 1200.ms),
+            style: HomeTextStyles.title(color: AppColors.police),
+          ),
         ],
       ),
     );
@@ -538,11 +809,11 @@ class _BotTargetGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'কাদের উপর সন্দেহ? (চোর খুঁজো)',
+          'Tap Suspect to Accuse as Chor',
           textAlign: TextAlign.center,
           style: HomeTextStyles.title(color: AppColors.textLightPrimary),
         ),
-        AppSpacing.gapVMd,
+        AppSpacing.gapVSm,
         Expanded(
           child: ListView.separated(
             itemCount: bots.length,
@@ -553,27 +824,32 @@ class _BotTargetGrid extends StatelessWidget {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: state.busy ? null : () => onGuess(bot.id),
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(16),
                   child: Ink(
-                    height: 72,
+                    height: 64,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(16),
                       color: AppColors.surfaceElevatedDark,
                       border: Border.all(
-                        color: AppColors.police.withValues(alpha: 0.55),
-                        width: 1.6,
-                      ),
-                      boxShadow: AppColors.darkNeonGlow(
-                        AppColors.police,
-                        alpha: 0.22,
+                        color: AppColors.police.withValues(alpha: 0.5),
                       ),
                     ),
                     child: Row(
                       children: [
-                        const SizedBox(width: 16),
-                        const Icon(
-                          Icons.person_search_rounded,
-                          color: AppColors.police,
+                        const SizedBox(width: 14),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.police.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'SUSPECT ${String.fromCharCode(65 + i)}',
+                            style: HomeTextStyles.caption(
+                              color: AppColors.police,
+                            ),
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -584,11 +860,11 @@ class _BotTargetGrid extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const Icon(
-                          Icons.chevron_right_rounded,
-                          color: AppColors.textLightMuted,
+                        Text(
+                          'ACCUSE',
+                          style: HomeTextStyles.caption(color: AppColors.chor),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 14),
                       ],
                     ),
                   ),

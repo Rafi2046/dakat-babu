@@ -3,8 +3,8 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/audio/audio.dart';
+import '../../core/constants/app_constants.dart';
 import '../../domain/game/game_engine.dart';
-import '../../domain/game/game_role.dart';
 import '../../domain/game/player_view.dart';
 import 'robot_match_viewmodel.dart';
 
@@ -27,6 +27,9 @@ enum SinglePlayerPhase {
 
   /// Guess resolved — show [RoundResultOverlay].
   result,
+
+  /// All configured rounds finished.
+  matchOver,
 }
 
 class SinglePlayerState {
@@ -40,9 +43,9 @@ class SinglePlayerState {
   final GuessResult? result;
   final String? statusMessage;
   final bool busy;
-
-  /// Which of the 4 mystery slots the human tapped (0–3).
   final int? selectedCardIndex;
+  final int currentRound;
+  final int totalRounds;
 
   const SinglePlayerState({
     required this.phase,
@@ -56,22 +59,52 @@ class SinglePlayerState {
     this.statusMessage,
     this.busy = false,
     this.selectedCardIndex,
+    this.currentRound = 1,
+    this.totalRounds = AppConstants.defaultTotalRounds,
   });
 
   bool get humanIsPolice =>
       assignment != null && assignment!.policePlayerId == humanId;
+
+  bool get isLastRound => currentRound >= totalRounds;
 
   bool get cardsLocked =>
       selectedCardIndex != null ||
       (phase != SinglePlayerPhase.pickCard &&
           phase != SinglePlayerPhase.pickRole);
 
-  /// Winner role for [RoundResultOverlay] (police catch vs chor escape).
+  String get stageLabel {
+    switch (phase) {
+      case SinglePlayerPhase.pickCard:
+      case SinglePlayerPhase.pickRole:
+        return 'Role Draw';
+      case SinglePlayerPhase.revealing:
+        return 'Reveal';
+      case SinglePlayerPhase.policeSearching:
+        return 'Police Thinking';
+      case SinglePlayerPhase.awaitingGuess:
+        return 'Accusation';
+      case SinglePlayerPhase.result:
+        return 'Round Result';
+      case SinglePlayerPhase.matchOver:
+        return 'Match Over';
+    }
+  }
+
   GameRole? get resultWinner {
     final r = result;
     if (r == null) return null;
     return r.isCorrect ? GameRole.police : GameRole.chor;
   }
+
+  /// Players sorted by score for the live scoreboard.
+  List<EnginePlayer> get rankedPlayers {
+    final list = List<EnginePlayer>.from(players);
+    list.sort((a, b) => b.score.compareTo(a.score));
+    return list;
+  }
+
+  GameRole? roleOf(String playerId) => assignment?.roleOf(playerId);
 
   SinglePlayerState copyWith({
     SinglePlayerPhase? phase,
@@ -83,28 +116,33 @@ class SinglePlayerState {
     String? statusMessage,
     bool? busy,
     int? selectedCardIndex,
+    int? currentRound,
+    int? totalRounds,
     bool clearResult = false,
     bool clearSelection = false,
+    bool clearAssignment = false,
   }) {
     return SinglePlayerState(
       phase: phase ?? this.phase,
       humanId: humanId,
       humanName: humanName,
       players: players ?? this.players,
-      humanRole: humanRole ?? this.humanRole,
-      assignment: assignment ?? this.assignment,
-      view: view ?? this.view,
+      humanRole: clearAssignment ? null : (humanRole ?? this.humanRole),
+      assignment: clearAssignment ? null : (assignment ?? this.assignment),
+      view: clearAssignment ? null : (view ?? this.view),
       result: clearResult ? null : (result ?? this.result),
       statusMessage: statusMessage ?? this.statusMessage,
       busy: busy ?? this.busy,
       selectedCardIndex: clearSelection
           ? null
           : (selectedCardIndex ?? this.selectedCardIndex),
+      currentRound: currentRound ?? this.currentRound,
+      totalRounds: totalRounds ?? this.totalRounds,
     );
   }
 }
 
-/// Offline Vs Computer engine — classic mystery draw + practice role pick.
+/// Offline Vs Computer engine — classic mystery draw + multi-round scoring.
 class SinglePlayerEngine extends Notifier<SinglePlayerState> {
   Random _rng = Random();
 
@@ -114,15 +152,22 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
 
   @override
   SinglePlayerState build() {
-    return _idle('You', classic: true);
+    return _idle('You', classic: true, totalRounds: AppConstants.defaultTotalRounds);
   }
 
-  SinglePlayerState _idle(String name, {required bool classic}) {
-    final players = [
-      EnginePlayer(id: humanId, name: name),
-      for (var i = 0; i < 3; i++)
-        EnginePlayer(id: botIds[i], name: botNames[i]),
-    ];
+  SinglePlayerState _idle(
+    String name, {
+    required bool classic,
+    required int totalRounds,
+    List<EnginePlayer>? keepScores,
+    int currentRound = 1,
+  }) {
+    final players = keepScores ??
+        [
+          EnginePlayer(id: humanId, name: name),
+          for (var i = 0; i < 3; i++)
+            EnginePlayer(id: botIds[i], name: botNames[i]),
+        ];
     return SinglePlayerState(
       phase: classic
           ? SinglePlayerPhase.pickCard
@@ -130,6 +175,8 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
       humanId: humanId,
       humanName: name,
       players: players,
+      currentRound: currentRound,
+      totalRounds: totalRounds.clamp(1, 15),
       statusMessage: classic
           ? 'আপনার কার্ড বেছে নিন'
           : 'তোমার রোল কার্ড বেছে নাও',
@@ -137,24 +184,32 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
   }
 
   /// Begin / reset a classic mystery-card match.
-  void startMatch({required String humanName, Random? seed}) {
+  void startMatch({
+    required String humanName,
+    int totalRounds = AppConstants.defaultTotalRounds,
+    Random? seed,
+  }) {
     _rng = seed ?? Random();
     state = _idle(
       humanName.trim().isEmpty ? 'You' : humanName.trim(),
       classic: true,
+      totalRounds: totalRounds,
     );
   }
 
-  /// Begin / reset practice mode (choose exact role).
-  void startPracticeMatch({required String humanName, Random? seed}) {
+  void startPracticeMatch({
+    required String humanName,
+    int totalRounds = AppConstants.defaultTotalRounds,
+    Random? seed,
+  }) {
     _rng = seed ?? Random();
     state = _idle(
       humanName.trim().isEmpty ? 'You' : humanName.trim(),
       classic: false,
+      totalRounds: totalRounds,
     );
   }
 
-  /// Classic: tap any face-down card → shuffle roles, reveal user's draw.
   Future<void> pickMysteryCard(int cardIndex) async {
     if (state.phase != SinglePlayerPhase.pickCard || state.busy) return;
     if (cardIndex < 0 || cardIndex > 3) return;
@@ -184,15 +239,12 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
     );
 
     await ref.read(audioManagerProvider).play(AudioEvent.roleCardFlip);
-
-    // Give the 3D flip (~650ms) time to finish + a beat to read the role.
     await Future<void>.delayed(const Duration(milliseconds: 1800));
     if (state.phase != SinglePlayerPhase.revealing) return;
 
     await _afterReveal(assignment);
   }
 
-  /// Practice: human picks an exact role; bots get the rest at random.
   Future<void> selectHumanRole(GameRole role) async {
     if (state.phase != SinglePlayerPhase.pickRole || state.busy) return;
 
@@ -204,8 +256,7 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
     );
 
     final audio = ref.read(audioManagerProvider);
-    final delayMs = 800 + _rng.nextInt(600);
-    await Future<void>.delayed(Duration(milliseconds: delayMs));
+    await Future<void>.delayed(Duration(milliseconds: 800 + _rng.nextInt(600)));
     await audio.play(AudioEvent.cardTap);
 
     final remaining = List<GameRole>.from(GameRole.values)..remove(role);
@@ -269,10 +320,8 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
     if (state.assignment == null) return;
     state = state.copyWith(busy: true, statusMessage: 'পুলিশ চোর খুঁজছে...');
 
-    final audio = ref.read(audioManagerProvider);
-    await audio.play(AudioEvent.buttonTap);
+    await ref.read(audioManagerProvider).play(AudioEvent.buttonTap);
 
-    // Bot police may only accuse the 3 non-police seats (bots + human if not police).
     final suspects = state.players
         .where((p) => p.id != state.assignment!.policePlayerId)
         .map((p) => p.id)
@@ -287,7 +336,6 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
     await _resolve(suspectId);
   }
 
-  /// Human Police taps a bot suspect.
   Future<void> submitHumanGuess(String suspectPlayerId) async {
     if (state.phase != SinglePlayerPhase.awaitingGuess ||
         !state.humanIsPolice ||
@@ -313,9 +361,8 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
           policeTag: false,
         );
 
-    final winnerName = updated
-        .firstWhere((p) => p.id == result.scoreRecipientId)
-        .name;
+    final winnerName =
+        updated.firstWhere((p) => p.id == result.scoreRecipientId).name;
 
     state = state.copyWith(
       phase: SinglePlayerPhase.result,
@@ -328,12 +375,41 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
     );
   }
 
+  /// After result overlay — next round or match over.
+  void continueAfterResult() {
+    if (state.phase != SinglePlayerPhase.result) return;
+
+    if (state.isLastRound) {
+      final leader = state.rankedPlayers.first;
+      state = state.copyWith(
+        phase: SinglePlayerPhase.matchOver,
+        statusMessage: 'ম্যাচ শেষ! বিজয়ী: ${leader.name} (${leader.score})',
+        clearResult: true,
+      );
+      return;
+    }
+
+    state = _idle(
+      state.humanName,
+      classic: true,
+      totalRounds: state.totalRounds,
+      keepScores: state.players,
+      currentRound: state.currentRound + 1,
+    );
+  }
+
   void playAgain() {
-    startMatch(humanName: state.humanName);
+    startMatch(
+      humanName: state.humanName,
+      totalRounds: state.totalRounds,
+    );
   }
 
   void playAgainPractice() {
-    startPracticeMatch(humanName: state.humanName);
+    startPracticeMatch(
+      humanName: state.humanName,
+      totalRounds: state.totalRounds,
+    );
   }
 }
 

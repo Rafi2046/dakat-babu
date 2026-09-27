@@ -80,10 +80,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final extra = state.extra;
           var name = 'You';
-          if (extra is Map && extra['humanName'] is String) {
-            name = extra['humanName'] as String;
+          var totalRounds = 5;
+          if (extra is Map) {
+            if (extra['humanName'] is String) {
+              name = extra['humanName'] as String;
+            }
+            if (extra['totalRounds'] is int) {
+              totalRounds = extra['totalRounds'] as int;
+            }
           }
-          return ClassicSinglePlayerScreen(humanName: name);
+          return ClassicSinglePlayerScreen(
+            humanName: name,
+            totalRounds: totalRounds,
+          );
         },
       ),
       GoRoute(
