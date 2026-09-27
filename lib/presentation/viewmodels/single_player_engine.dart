@@ -10,16 +10,22 @@ import 'robot_match_viewmodel.dart';
 
 /// Lifecycle phases for offline vs-bots match.
 enum SinglePlayerPhase {
-  /// Human picks their role card first.
+  /// Classic: 4 face-down mystery cards — tap any to draw a random role.
+  pickCard,
+
+  /// Practice: user deliberately picks an exact role.
   pickRole,
 
-  /// Bots are "thinking" / selecting remaining roles.
-  botsThinking,
+  /// User's mystery card is flipping / just revealed.
+  revealing,
 
-  /// Roles assigned; waiting for Police guess.
+  /// A bot is Police — searching for Chor.
+  policeSearching,
+
+  /// Human is Police — pick a bot suspect.
   awaitingGuess,
 
-  /// Guess resolved — show winner.
+  /// Guess resolved — show [RoundResultOverlay].
   result,
 }
 
@@ -35,6 +41,9 @@ class SinglePlayerState {
   final String? statusMessage;
   final bool busy;
 
+  /// Which of the 4 mystery slots the human tapped (0–3).
+  final int? selectedCardIndex;
+
   const SinglePlayerState({
     required this.phase,
     required this.humanId,
@@ -46,10 +55,23 @@ class SinglePlayerState {
     this.result,
     this.statusMessage,
     this.busy = false,
+    this.selectedCardIndex,
   });
 
   bool get humanIsPolice =>
       assignment != null && assignment!.policePlayerId == humanId;
+
+  bool get cardsLocked =>
+      selectedCardIndex != null ||
+      phase != SinglePlayerPhase.pickCard &&
+          phase != SinglePlayerPhase.pickRole;
+
+  /// Winner role for [RoundResultOverlay] (police catch vs chor escape).
+  GameRole? get resultWinner {
+    final r = result;
+    if (r == null) return null;
+    return r.isCorrect ? GameRole.police : GameRole.chor;
+  }
 
   SinglePlayerState copyWith({
     SinglePlayerPhase? phase,
@@ -60,7 +82,9 @@ class SinglePlayerState {
     GuessResult? result,
     String? statusMessage,
     bool? busy,
+    int? selectedCardIndex,
     bool clearResult = false,
+    bool clearSelection = false,
   }) {
     return SinglePlayerState(
       phase: phase ?? this.phase,
@@ -73,11 +97,14 @@ class SinglePlayerState {
       result: clearResult ? null : (result ?? this.result),
       statusMessage: statusMessage ?? this.statusMessage,
       busy: busy ?? this.busy,
+      selectedCardIndex: clearSelection
+          ? null
+          : (selectedCardIndex ?? this.selectedCardIndex),
     );
   }
 }
 
-/// Offline Vs Computer engine: human picks a role card, bots get the rest.
+/// Offline Vs Computer engine — classic mystery draw + practice role pick.
 class SinglePlayerEngine extends Notifier<SinglePlayerState> {
   Random _rng = Random();
 
@@ -87,50 +114,99 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
 
   @override
   SinglePlayerState build() {
-    return _idle('You');
+    return _idle('You', classic: true);
   }
 
-  SinglePlayerState _idle(String name) {
+  SinglePlayerState _idle(String name, {required bool classic}) {
     final players = [
       EnginePlayer(id: humanId, name: name),
       for (var i = 0; i < 3; i++)
         EnginePlayer(id: botIds[i], name: botNames[i]),
     ];
     return SinglePlayerState(
-      phase: SinglePlayerPhase.pickRole,
+      phase: classic
+          ? SinglePlayerPhase.pickCard
+          : SinglePlayerPhase.pickRole,
       humanId: humanId,
       humanName: name,
       players: players,
-      statusMessage: 'তোমার রোল কার্ড বেছে নাও',
+      statusMessage: classic
+          ? 'আপনার কার্ড বেছে নিন'
+          : 'তোমার রোল কার্ড বেছে নাও',
     );
   }
 
-  /// Begin / reset a match. Optional [seed] for tests.
+  /// Begin / reset a classic mystery-card match.
   void startMatch({required String humanName, Random? seed}) {
     _rng = seed ?? Random();
-    state = _idle(humanName.trim().isEmpty ? 'You' : humanName.trim());
+    state = _idle(
+      humanName.trim().isEmpty ? 'You' : humanName.trim(),
+      classic: true,
+    );
   }
 
-  /// Human selects their role first; remaining three go to bots after suspense.
+  /// Begin / reset practice mode (choose exact role).
+  void startPracticeMatch({required String humanName, Random? seed}) {
+    _rng = seed ?? Random();
+    state = _idle(
+      humanName.trim().isEmpty ? 'You' : humanName.trim(),
+      classic: false,
+    );
+  }
+
+  /// Classic: tap any face-down card → shuffle roles, reveal user's draw.
+  Future<void> pickMysteryCard(int cardIndex) async {
+    if (state.phase != SinglePlayerPhase.pickCard || state.busy) return;
+    if (cardIndex < 0 || cardIndex > 3) return;
+
+    final deck = List<GameRole>.from(GameRole.values)..shuffle(_rng);
+    final humanRole = deck.removeAt(0);
+
+    final byId = <String, GameRole>{
+      humanId: humanRole,
+      for (var i = 0; i < botIds.length; i++) botIds[i]: deck[i],
+    };
+    final assignment = _assignmentFrom(byId);
+    final view = GameEngine.buildPlayerView(
+      viewerId: humanId,
+      players: state.players,
+      assignment: assignment,
+    );
+
+    state = state.copyWith(
+      phase: SinglePlayerPhase.revealing,
+      selectedCardIndex: cardIndex,
+      humanRole: humanRole,
+      assignment: assignment,
+      view: view,
+      busy: true,
+      statusMessage: 'তোমার রোল: ${humanRole.label}',
+    );
+
+    await ref.read(audioManagerProvider).play(AudioEvent.roleCardFlip);
+
+    // Let the 3D flip + haptic settle.
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    if (state.phase != SinglePlayerPhase.revealing) return;
+
+    await _afterReveal(assignment);
+  }
+
+  /// Practice: human picks an exact role; bots get the rest at random.
   Future<void> selectHumanRole(GameRole role) async {
     if (state.phase != SinglePlayerPhase.pickRole || state.busy) return;
 
     state = state.copyWith(
-      phase: SinglePlayerPhase.botsThinking,
+      phase: SinglePlayerPhase.revealing,
       humanRole: role,
       busy: true,
       statusMessage: 'বটরা কার্ড নিচ্ছে...',
     );
 
     final audio = ref.read(audioManagerProvider);
-    // Suspense: 1–2s with tactile clicks.
-    final delayMs = 1000 + _rng.nextInt(1000);
-    final ticks = 3 + _rng.nextInt(2);
-    final step = delayMs ~/ ticks;
-    for (var i = 0; i < ticks; i++) {
-      await Future<void>.delayed(Duration(milliseconds: step));
-      await audio.play(AudioEvent.cardTap);
-    }
+    final delayMs = 800 + _rng.nextInt(600);
+    await Future<void>.delayed(Duration(milliseconds: delayMs));
+    await audio.play(AudioEvent.cardTap);
 
     final remaining = List<GameRole>.from(GameRole.values)..remove(role);
     remaining.shuffle(_rng);
@@ -139,49 +215,64 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
       humanId: role,
       for (var i = 0; i < botIds.length; i++) botIds[i]: remaining[i],
     };
-
-    String idFor(GameRole r) =>
-        byId.entries.firstWhere((e) => e.value == r).key;
-
-    final assignment = RoleAssignment(
-      policePlayerId: idFor(GameRole.police),
-      babuPlayerId: idFor(GameRole.babu),
-      chorPlayerId: idFor(GameRole.chor),
-      dakatPlayerId: idFor(GameRole.dakat),
-    );
-
+    final assignment = _assignmentFrom(byId);
     final view = GameEngine.buildPlayerView(
       viewerId: humanId,
       players: state.players,
       assignment: assignment,
     );
 
-    await audio.play(AudioEvent.roleCardFlip);
-
     state = state.copyWith(
-      phase: SinglePlayerPhase.awaitingGuess,
       assignment: assignment,
       view: view,
-      busy: false,
-      statusMessage: assignment.policePlayerId == humanId
-          ? 'তুমি পুলিশ — চোরকে খুঁজে বের করো'
-          : 'পুলিশ বট চিন্তা করছে...',
+      statusMessage: 'তোমার রোল: ${role.label}',
     );
 
-    // If a bot is Police, auto-guess after another suspense beat.
-    if (assignment.policePlayerId != humanId) {
-      await _botPoliceGuess();
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    if (state.phase != SinglePlayerPhase.revealing) return;
+
+    await _afterReveal(assignment);
+  }
+
+  Future<void> _afterReveal(RoleAssignment assignment) async {
+    if (assignment.policePlayerId == humanId) {
+      state = state.copyWith(
+        phase: SinglePlayerPhase.awaitingGuess,
+        busy: false,
+        statusMessage: 'তুমি পুলিশ — চোরকে খুঁজে বের করো',
+      );
+      return;
     }
+
+    state = state.copyWith(
+      phase: SinglePlayerPhase.policeSearching,
+      busy: true,
+      statusMessage: 'পুলিশ চোর খুঁজছে...',
+    );
+    await Future<void>.delayed(const Duration(seconds: 2));
+    if (state.phase != SinglePlayerPhase.policeSearching) return;
+    await _botPoliceGuess();
+  }
+
+  RoleAssignment _assignmentFrom(Map<String, GameRole> byId) {
+    String idFor(GameRole r) =>
+        byId.entries.firstWhere((e) => e.value == r).key;
+    return RoleAssignment(
+      policePlayerId: idFor(GameRole.police),
+      babuPlayerId: idFor(GameRole.babu),
+      chorPlayerId: idFor(GameRole.chor),
+      dakatPlayerId: idFor(GameRole.dakat),
+    );
   }
 
   Future<void> _botPoliceGuess() async {
     if (state.assignment == null) return;
-    state = state.copyWith(busy: true, statusMessage: 'পুলিশ বট সিলেক্ট করছে...');
+    state = state.copyWith(busy: true, statusMessage: 'পুলিশ চোর খুঁজছে...');
 
     final audio = ref.read(audioManagerProvider);
-    await Future<void>.delayed(Duration(milliseconds: 1200 + _rng.nextInt(600)));
     await audio.play(AudioEvent.buttonTap);
 
+    // Bot police may only accuse the 3 non-police seats (bots + human if not police).
     final suspects = state.players
         .where((p) => p.id != state.assignment!.policePlayerId)
         .map((p) => p.id)
@@ -196,7 +287,7 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
     await _resolve(suspectId);
   }
 
-  /// Human Police picks a suspect.
+  /// Human Police taps a bot suspect.
   Future<void> submitHumanGuess(String suspectPlayerId) async {
     if (state.phase != SinglePlayerPhase.awaitingGuess ||
         !state.humanIsPolice ||
@@ -239,6 +330,10 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
 
   void playAgain() {
     startMatch(humanName: state.humanName);
+  }
+
+  void playAgainPractice() {
+    startPracticeMatch(humanName: state.humanName);
   }
 }
 
