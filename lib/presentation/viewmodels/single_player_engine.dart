@@ -287,6 +287,7 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
 
   Future<void> _afterReveal(RoleAssignment assignment) async {
     if (assignment.policePlayerId == humanId) {
+      await ref.read(audioManagerProvider).playPoliceArrive();
       state = state.copyWith(
         phase: SinglePlayerPhase.awaitingGuess,
         busy: false,
@@ -300,6 +301,7 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
       busy: true,
       statusMessage: 'পুলিশ চোর খুঁজছে...',
     );
+    await ref.read(audioManagerProvider).playPoliceArrive();
     await Future<void>.delayed(const Duration(seconds: 2));
     if (state.phase != SinglePlayerPhase.policeSearching) return;
     await _botPoliceGuess();

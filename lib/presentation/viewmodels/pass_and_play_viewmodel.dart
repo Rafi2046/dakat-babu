@@ -41,8 +41,7 @@ class PassAndPlayPlayer {
     return PassAndPlayPlayer(
       id: id ?? this.id,
       name: name ?? this.name,
-      // Prefer explicit [role] when provided so reshuffles never stick.
-      role: clearRole ? null : (role != null ? role : this.role),
+      role: clearRole ? null : (role ?? this.role),
       totalScore: totalScore ?? this.totalScore,
       roundScore: roundScore ?? this.roundScore,
       correctGuesses: correctGuesses ?? this.correctGuesses,
