@@ -91,7 +91,7 @@ void main() {
     });
   });
 
-  group('GameEngine.resolveGuess 1A scoring', () {
+  group('GameEngine.resolveGuess classic scoring', () {
     const assignment = RoleAssignment(
       policePlayerId: 'p1',
       babuPlayerId: 'p2',
@@ -99,36 +99,45 @@ void main() {
       dakatPlayerId: 'p4',
     );
 
-    test('correct chor guess awards police +1', () {
+    test('correct chor guess: Police 800, Chor 0, Dakat 600, Babu 900', () {
       final result = GameEngine.resolveGuess(
         players: players,
         assignment: assignment,
         suspectPlayerId: 'p3',
       );
       expect(result.isCorrect, isTrue);
-      expect(result.scoresAfter['p1'], 1);
-      expect(result.scoresAfter['p3'], 0);
+      expect(result.roundDeltas['p1'], 800);
+      expect(result.roundDeltas['p2'], 900);
+      expect(result.roundDeltas['p3'], 0);
+      expect(result.roundDeltas['p4'], 600);
+      expect(result.scoresAfter['p1'], 800);
+      expect(result.scoresAfter['p2'], 900);
     });
 
-    test('wrong dakat guess awards suspect +1', () {
+    test('wrong dakat guess: Police 0, Chor 400, Dakat 600, Babu 900', () {
       final result = GameEngine.resolveGuess(
         players: players,
         assignment: assignment,
         suspectPlayerId: 'p4',
       );
       expect(result.isCorrect, isFalse);
-      expect(result.scoresAfter['p1'], 0);
-      expect(result.scoresAfter['p4'], 1);
+      expect(result.roundDeltas['p1'], 0);
+      expect(result.roundDeltas['p2'], 900);
+      expect(result.roundDeltas['p3'], 400);
+      expect(result.roundDeltas['p4'], 600);
     });
 
-    test('wrong babu guess awards babu +1', () {
+    test('wrong babu guess still pays classic table', () {
       final result = GameEngine.resolveGuess(
         players: players,
         assignment: assignment,
         suspectPlayerId: 'p2',
       );
       expect(result.isCorrect, isFalse);
-      expect(result.scoresAfter['p2'], 1);
+      expect(result.roundDeltas['p2'], 900);
+      expect(result.roundDeltas['p1'], 0);
+      expect(result.roundDeltas['p3'], 400);
+      expect(result.roundDeltas['p4'], 600);
     });
 
     test('applyGuessResult increments police tags on correct', () {
@@ -139,7 +148,7 @@ void main() {
       );
       final updated = GameEngine.applyGuessResult(players, result);
       final police = updated.firstWhere((p) => p.id == 'p1');
-      expect(police.score, 1);
+      expect(police.score, 800);
       expect(police.correctGuesses, 1);
       expect(police.policeTags, 1);
     });

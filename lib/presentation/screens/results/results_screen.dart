@@ -671,17 +671,24 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
   int _calculateRoundPoints(PlayerModel player, RoundModel? round, RoomModel? room) {
     if (round == null) return 0;
     final isCorrect = round.isGuessCorrect ?? false;
-    final delta = room?.getPointsForRole(GameRole.police) ??
-        AppConstants.policeCorrectPoints;
 
-    // +1 system: correct → Police; wrong → selected suspect.
-    if (isCorrect) {
-      if (player.id == round.policePlayerId) return delta;
-      return 0;
+    if (player.id == round.babuPlayerId) {
+      return room?.getPointsForRole(GameRole.babu) ?? AppConstants.babuPoints;
     }
-    if (player.id == round.policeGuessPlayerId) {
-      return room?.getPointsForRole(GameRole.chor) ??
-          AppConstants.wrongGuessSuspectPoints;
+    if (player.id == round.dakatPlayerId) {
+      return room?.getPointsForRole(GameRole.dakat) ?? AppConstants.dakatPoints;
+    }
+    if (player.id == round.policePlayerId) {
+      return isCorrect
+          ? (room?.getPointsForRole(GameRole.police) ??
+              AppConstants.policeCorrectPoints)
+          : 0;
+    }
+    if (player.id == round.chorPlayerId) {
+      return isCorrect
+          ? 0
+          : (room?.getPointsForRole(GameRole.chor) ??
+              AppConstants.chorEscapePoints);
     }
     return 0;
   }

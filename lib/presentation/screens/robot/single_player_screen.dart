@@ -97,6 +97,22 @@ class _PracticeModeScreenState extends ConsumerState<PracticeModeScreen> {
                 winner: state.resultWinner!,
                 headlineOverride: state.statusMessage,
                 nextLabel: 'আবার খেলো',
+                scoreChips: [
+                  if (state.result != null && state.assignment != null)
+                    for (final id in [
+                      state.assignment!.babuPlayerId,
+                      state.assignment!.policePlayerId,
+                      state.assignment!.dakatPlayerId,
+                      state.assignment!.chorPlayerId,
+                    ])
+                      RoundScoreChip(
+                        name: state.players
+                            .firstWhere((p) => p.id == id)
+                            .name,
+                        role: state.assignment!.roleOf(id)!,
+                        points: state.result!.deltaFor(id),
+                      ),
+                ],
                 onNextRound: () {
                   ref
                       .read(singlePlayerEngineProvider.notifier)

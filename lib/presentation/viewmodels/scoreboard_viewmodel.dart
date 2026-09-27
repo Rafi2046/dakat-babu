@@ -73,15 +73,19 @@ class ScoreboardState {
       final roleLabel = room?.getLabelForRole(role) ?? role.shortName;
       final isCorrect = round.isGuessCorrect ?? false;
 
-      // Reconstruct +1 scoring for completed rounds.
+      // Reconstruct classic childhood scoring for completed rounds.
       int points = 0;
       if (round.status == RoundStatus.completed &&
           round.policeGuessPlayerId != null) {
-        if (isCorrect && role == GameRole.police) {
-          points = AppConstants.policeCorrectPoints;
-        } else if (!isCorrect &&
-            round.policeGuessPlayerId == playerId) {
-          points = AppConstants.wrongGuessSuspectPoints;
+        switch (role) {
+          case GameRole.babu:
+            points = AppConstants.babuPoints;
+          case GameRole.dakat:
+            points = AppConstants.dakatPoints;
+          case GameRole.police:
+            points = isCorrect ? AppConstants.policeCorrectPoints : 0;
+          case GameRole.chor:
+            points = isCorrect ? 0 : AppConstants.chorEscapePoints;
         }
       }
 

@@ -4,7 +4,7 @@ import 'package:dakat_babu/presentation/viewmodels/pass_and_play_viewmodel.dart'
 import 'package:dakat_babu/domain/game/game_role.dart';
 
 void main() {
-  test('Pass & Pass full match awards +1 and ends', () {
+  test('Pass & Pass full match awards classic points and ends', () {
     final vm = PassAndPlayViewModel(random: null);
     // Use fixed Random via re-init — assign then force accusation path
     vm.initMatch(
@@ -31,7 +31,8 @@ void main() {
     final chorId = vm.state.assignment!.chorPlayerId;
     vm.makeAccusation(chorId);
     expect(vm.state.isGuessCorrect, isTrue);
-    expect(vm.state.policePlayer!.totalScore, 1);
+    expect(vm.state.policePlayer!.totalScore, 800);
+    expect(vm.state.babuPlayer!.totalScore, 900);
 
     vm.nextRound();
     expect(vm.state.currentRound, 2);

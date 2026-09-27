@@ -101,11 +101,11 @@ void main() {
   });
 
   group('GameRole Rules & Points', () {
-    test('role points match CPDB +1 rules', () {
+    test('role points match classic childhood table', () {
       expect(GameRole.police.points, AppConstants.policeCorrectPoints);
-      expect(GameRole.babu.points, AppConstants.wrongGuessSuspectPoints);
-      expect(GameRole.chor.points, AppConstants.wrongGuessSuspectPoints);
-      expect(GameRole.dakat.points, AppConstants.wrongGuessSuspectPoints);
+      expect(GameRole.babu.points, AppConstants.babuPoints);
+      expect(GameRole.chor.points, AppConstants.chorEscapePoints);
+      expect(GameRole.dakat.points, AppConstants.dakatPoints);
     });
 
     test('role display names are formatted', () {
