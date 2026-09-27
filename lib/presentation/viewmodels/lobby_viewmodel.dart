@@ -7,7 +7,7 @@ import '../../core/errors/failures.dart';
 import '../../data/models/player_model.dart';
 import '../../data/models/room_model.dart';
 import '../../domain/repositories/room_repository.dart';
-import '../../domain/usecases/assign_roles_usecase.dart';
+import 'online_game_state_provider.dart';
 
 /// State representation for the Lobby waiting room.
 class LobbyState {
@@ -74,7 +74,7 @@ class LobbyState {
 class LobbyViewModel extends StateNotifier<LobbyState> {
   final String _roomCode;
   final RoomRepository _roomRepository;
-  final AssignRolesUseCase _assignRolesUseCase;
+  final StartOnlineRound _startOnlineRound;
 
   StreamSubscription<RoomModel?>? _roomSubscription;
   StreamSubscription<List<PlayerModel>>? _playersSubscription;
@@ -82,10 +82,10 @@ class LobbyViewModel extends StateNotifier<LobbyState> {
   LobbyViewModel({
     required String roomCode,
     required RoomRepository roomRepository,
-    required AssignRolesUseCase assignRolesUseCase,
+    required StartOnlineRound startOnlineRound,
   })  : _roomCode = roomCode,
         _roomRepository = roomRepository,
-        _assignRolesUseCase = assignRolesUseCase,
+        _startOnlineRound = startOnlineRound,
         super(const LobbyState()) {
     _subscribeToLobby();
   }
@@ -198,11 +198,7 @@ class LobbyViewModel extends StateNotifier<LobbyState> {
 
     state = state.copyWith(isStarting: true, clearError: true);
     try {
-      await _assignRolesUseCase(
-        roomCode: _roomCode,
-        players: state.players,
-        roundNumber: 1,
-      );
+      await _startOnlineRound(roomCode: _roomCode, roundNumber: 1);
       state = state.copyWith(isStarting: false);
       return true;
     } catch (e) {
@@ -227,7 +223,7 @@ final lobbyViewModelProvider =
     return LobbyViewModel(
       roomCode: roomCode,
       roomRepository: ref.watch(roomRepositoryProvider),
-      assignRolesUseCase: ref.watch(assignRolesUseCaseProvider),
+      startOnlineRound: ref.watch(startOnlineRoundProvider),
     );
   },
 );
