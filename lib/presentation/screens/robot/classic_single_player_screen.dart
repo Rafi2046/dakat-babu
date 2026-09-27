@@ -61,10 +61,36 @@ class _ClassicSinglePlayerScreenState
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Static arena bg — parallax was causing NaN jank + “stuck” feel.
+          // Arena atmosphere — radial neon wash over dark field.
           const DecoratedBox(
             decoration: BoxDecoration(
               gradient: AppColors.darkBackgroundGradient,
+            ),
+          ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: const Alignment(0, -0.15),
+                radius: 1.05,
+                colors: [
+                  AppColors.secondary.withValues(alpha: 0.22),
+                  AppColors.police.withValues(alpha: 0.06),
+                  Colors.transparent,
+                ],
+                stops: const [0, 0.45, 1],
+              ),
+            ),
+          ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: const Alignment(0.85, 0.95),
+                radius: 0.75,
+                colors: [
+                  AppColors.chor.withValues(alpha: 0.12),
+                  Colors.transparent,
+                ],
+              ),
             ),
           ),
           if (!showOverlay)
@@ -254,25 +280,40 @@ class _IdentityStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        color: AppColors.surfaceElevatedDark,
-        border: Border.all(color: role.color.withValues(alpha: 0.55)),
-        boxShadow: AppColors.darkNeonGlow(role.color, alpha: 0.18),
+        borderRadius: BorderRadius.circular(16),
+        color: AppColors.surfaceElevatedDark.withValues(alpha: 0.95),
+        border: Border.all(color: role.color.withValues(alpha: 0.65), width: 1.4),
+        boxShadow: AppColors.darkNeonGlow(role.color, alpha: 0.22),
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: role.color.withValues(alpha: 0.25),
-            child: Icon(Icons.person, size: 18, color: role.color),
+          Image.asset(
+            role.badgeAsset,
+            height: 44,
+            width: 44,
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) => Icon(
+              Icons.shield_rounded,
+              color: role.color,
+              size: 36,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              'YOUR IDENTITY: ${role.label}',
-              style: HomeTextStyles.body(color: AppColors.textLightPrimary),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'YOUR ROLE',
+                  style: HomeTextStyles.caption(color: AppColors.textLightMuted),
+                ),
+                Text(
+                  role.label.toUpperCase(),
+                  style: HomeTextStyles.title(color: role.color),
+                ),
+              ],
             ),
           ),
           if (isPolice)
@@ -281,10 +322,12 @@ class _IdentityStrip extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.police.withValues(alpha: 0.25),
                 borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.police.withValues(alpha: 0.5)),
               ),
               child: Text(
                 'Catch Chor!',
-                style: HomeTextStyles.caption(color: AppColors.police),
+                style: HomeTextStyles.caption(color: AppColors.police)
+                    .copyWith(fontWeight: FontWeight.w700),
               ),
             ),
         ],
@@ -302,18 +345,30 @@ class _StageBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        color: AppColors.surfaceElevatedDark.withValues(alpha: 0.9),
-        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.4)),
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.secondary.withValues(alpha: 0.18),
+            AppColors.surfaceElevatedDark.withValues(alpha: 0.95),
+            AppColors.police.withValues(alpha: 0.12),
+          ],
+        ),
+        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.55), width: 1.5),
+        boxShadow: AppColors.darkNeonGlow(AppColors.secondary, alpha: 0.2),
       ),
       child: Text(
         message,
         textAlign: TextAlign.center,
-        style: HomeTextStyles.body(color: AppColors.secondary),
+        style: HomeTextStyles.title(color: AppColors.textLightPrimary).copyWith(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+        ),
       ),
-    );
+    )
+        .animate(onPlay: (c) => c.repeat(reverse: true))
+        .shimmer(duration: 2200.ms, color: AppColors.secondary.withValues(alpha: 0.15));
   }
 }
 
@@ -619,24 +674,13 @@ class _MysterySlot extends StatefulWidget {
 
 class _MysterySlotState extends State<_MysterySlot> {
   bool _pressed = false;
-  bool _tapped = false;
 
-  @override
-  void didUpdateWidget(covariant _MysterySlot oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.locked && !widget.selected && _tapped) {
-      _tapped = false;
-    }
-  }
-
-  void _handleTap() {
-    if (widget.locked || _tapped) return;
-    setState(() {
-      _tapped = true;
-      _pressed = false;
-    });
+  Future<void> _handleTap() async {
+    if (widget.locked) return;
+    setState(() => _pressed = true);
     HapticFeedback.heavyImpact();
     widget.onTap();
+    if (mounted) setState(() => _pressed = false);
   }
 
   @override
@@ -644,41 +688,60 @@ class _MysterySlotState extends State<_MysterySlot> {
     final dimmed = widget.locked && !widget.selected;
     final accent = widget.revealedRole?.color ?? AppColors.secondary;
 
-    return Opacity(
-      opacity: dimmed ? 0.32 : 1,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: widget.locked
-            ? null
-            : (_) => setState(() => _pressed = true),
-        onTapCancel: () {
-          if (_pressed) setState(() => _pressed = false);
-        },
-        onTap: widget.locked ? null : _handleTap,
-        child: AnimatedScale(
-          scale: _pressed ? 0.95 : (widget.selected ? 1.03 : 1),
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOut,
-          child: Tactile3DFlipCard(
-            key: ValueKey('mystery_${widget.index}'),
-            width: widget.width,
-            height: widget.height,
-            role: widget.revealedRole,
-            isRevealed: widget.isRevealed,
-            playFlipSound: false,
-            enableTap: false,
-            duration: const Duration(milliseconds: 650),
-            backFace: _MysteryBack(
-              index: widget.index,
-              pressed: _pressed,
-              highlight: !widget.locked,
+    Widget card = SizedBox(
+      width: widget.width,
+      height: widget.height,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: widget.locked ? null : _handleTap,
+          onHighlightChanged: (v) {
+            if (!mounted || widget.locked) return;
+            setState(() => _pressed = v);
+          },
+          child: AnimatedScale(
+            scale: _pressed ? 0.94 : (widget.selected ? 1.04 : 1),
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOut,
+            child: Tactile3DFlipCard(
+              key: ValueKey('mystery_flip_${widget.index}'),
+              width: widget.width,
+              height: widget.height,
+              role: widget.revealedRole,
+              isRevealed: widget.isRevealed,
+              playFlipSound: false,
+              enableTap: false,
+              duration: const Duration(milliseconds: 700),
+              backFace: _MysteryBack(
+                index: widget.index,
+                pressed: _pressed,
+                highlight: !widget.locked,
+              ),
+              frontFace: widget.revealedRole == null
+                  ? null
+                  : _RoleFront(role: widget.revealedRole!, accent: accent),
             ),
-            frontFace: widget.revealedRole == null
-                ? null
-                : _RoleFront(role: widget.revealedRole!, accent: accent),
           ),
         ),
       ),
+    );
+
+    if (!widget.locked) {
+      card = card
+          .animate(onPlay: (c) => c.repeat(reverse: true))
+          .moveY(
+            begin: 0,
+            end: -4,
+            duration: (1400 + widget.index * 180).ms,
+            curve: Curves.easeInOut,
+          )
+          .then(delay: (widget.index * 40).ms);
+    }
+
+    return Opacity(
+      opacity: dimmed ? 0.28 : 1,
+      child: card,
     );
   }
 }
@@ -703,46 +766,96 @@ class _MysteryBack extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: pressed
-              ? const [Color(0xFF1A1E28), Color(0xFF0E1118), Color(0xFF080A10)]
-              : const [Color(0xFF3A4258), Color(0xFF1F2432), Color(0xFF12161F)],
+              ? const [Color(0xFF1A2233), Color(0xFF0C1018), Color(0xFF07090F)]
+              : const [Color(0xFF2C3A55), Color(0xFF161C2A), Color(0xFF0B0F18)],
         ),
         border: Border.all(
           color: highlight
-              ? AppColors.secondary.withValues(alpha: pressed ? 0.75 : 0.55)
+              ? AppColors.secondary.withValues(alpha: pressed ? 0.9 : 0.7)
               : AppColors.borderDark,
-          width: 2,
+          width: 2.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.55),
-            blurRadius: pressed ? 6 : 14,
-            offset: Offset(0, pressed ? 3 : 8),
+            color: Colors.black.withValues(alpha: 0.6),
+            blurRadius: pressed ? 6 : 18,
+            offset: Offset(0, pressed ? 3 : 10),
           ),
           if (highlight)
             BoxShadow(
-              color: AppColors.secondary.withValues(alpha: 0.25),
-              blurRadius: 14,
+              color: AppColors.secondary.withValues(alpha: 0.35),
+              blurRadius: 18,
+              spreadRadius: 1,
             ),
         ],
       ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.help_outline_rounded,
-                color: AppColors.secondary.withValues(alpha: 0.9), size: 28),
-            const SizedBox(height: 6),
-            Text(
-              '?',
-              style: HomeTextStyles.hero(color: AppColors.textLightPrimary)
-                  .copyWith(fontSize: 34),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Card-back weave pattern.
+          DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white.withValues(alpha: 0.07),
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.35),
+                ],
+              ),
             ),
-            Text(
-              'কার্ড ${index + 1}',
-              style: HomeTextStyles.caption(color: AppColors.textLightSecondary),
+          ),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.secondary.withValues(alpha: 0.75),
+                      width: 2,
+                    ),
+                    color: AppColors.secondary.withValues(alpha: 0.12),
+                    boxShadow: AppColors.darkNeonGlow(
+                      AppColors.secondary,
+                      alpha: 0.3,
+                    ),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      '?',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'কার্ড ${index + 1}',
+                  style: HomeTextStyles.caption(
+                    color: AppColors.textLightSecondary,
+                  ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.6),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'TAP TO DRAW',
+                  style: HomeTextStyles.caption(
+                    color: AppColors.secondary.withValues(alpha: 0.85),
+                  ).copyWith(fontSize: 10, fontWeight: FontWeight.w800),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -763,22 +876,40 @@ class _RoleFront extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color.lerp(accent, Colors.black, 0.35)!,
+            Color.lerp(accent, Colors.black, 0.25)!,
             AppColors.surfaceElevatedDark,
             AppColors.backgroundDark,
           ],
         ),
-        border: Border.all(color: accent, width: 2.2),
+        border: Border.all(color: accent, width: 2.4),
         boxShadow: AppColors.darkNeonGlow(accent),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.style_rounded, color: accent, size: 40),
-          const SizedBox(height: 8),
-          Text(
-            role.label,
-            style: HomeTextStyles.hero(color: AppColors.textLightPrimary),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 14, 10, 4),
+              child: Image.asset(
+                role.badgeAsset,
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => Icon(
+                  Icons.military_tech_rounded,
+                  color: accent,
+                  size: 64,
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              role.label.toUpperCase(),
+              style: HomeTextStyles.title(color: accent).copyWith(
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.2,
+              ),
+            ),
           ),
         ],
       ),

@@ -149,6 +149,20 @@ extension GameRoleX on GameRole {
     }
   }
 
+  /// Hexagon role badge art (`assets/images/badges/`).
+  String get badgeAsset {
+    switch (this) {
+      case GameRole.police:
+        return AppImages.badgePolice;
+      case GameRole.babu:
+        return AppImages.badgeBabu;
+      case GameRole.chor:
+        return AppImages.badgeChor;
+      case GameRole.dakat:
+        return AppImages.badgeDakat;
+    }
+  }
+
   String get standingAsset {
     switch (this) {
       case GameRole.police:

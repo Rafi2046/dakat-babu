@@ -239,7 +239,7 @@ class SinglePlayerEngine extends Notifier<SinglePlayerState> {
     );
 
     await ref.read(audioManagerProvider).play(AudioEvent.roleCardFlip);
-    await Future<void>.delayed(const Duration(milliseconds: 1800));
+    await Future<void>.delayed(const Duration(milliseconds: 900));
     if (state.phase != SinglePlayerPhase.revealing) return;
 
     await _afterReveal(assignment);
