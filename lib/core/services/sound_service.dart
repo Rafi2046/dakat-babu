@@ -2,59 +2,49 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Service responsible for playing lightweight game sound effects.
+import 'audio/audio_providers.dart';
+import 'audio/audio_event.dart';
+
+/// Legacy thin wrapper — prefer [audioManagerProvider] + [AudioEvent].
+@Deprecated('Use audioManagerProvider.play(AudioEvent...)')
 class SoundService {
+  SoundService(this._ref);
+
+  final Ref _ref;
   final AudioPlayer _player = AudioPlayer();
 
-  SoundService() {
-    _player.setReleaseMode(ReleaseMode.stop);
-  }
-
-  /// Plays a subtle clock tick during the tense Police guessing phase.
   Future<void> playTick() async {
     try {
-      await _player.stop();
-      await _player.setVolume(0.35);
-      await _player.play(AssetSource('sounds/ticking.wav'));
+      await _ref.read(audioManagerProvider).play(AudioEvent.timerTick);
     } catch (e) {
       debugPrint('[SoundService] playTick error: $e');
     }
   }
 
-  /// Plays a short dramatic suspense sting right before results reveal.
   Future<void> playSting() async {
     try {
-      await _player.stop();
-      await _player.setVolume(0.65);
-      await _player.play(AssetSource('sounds/sting.wav'));
+      await _ref.read(audioManagerProvider).play(AudioEvent.tensionSting);
     } catch (e) {
       debugPrint('[SoundService] playSting error: $e');
     }
   }
 
-  /// Plays a victorious chime when Police correctly unmasks the Chor.
   Future<void> playSuccess() async {
     try {
-      await _player.stop();
-      await _player.setVolume(0.75);
-      await _player.play(AssetSource('sounds/success.wav'));
+      await _ref.read(audioManagerProvider).play(AudioEvent.correctGuess);
     } catch (e) {
       debugPrint('[SoundService] playSuccess error: $e');
     }
   }
 
-  /// Plays a low failure buzzer when the Chor outsmarts the Police.
   Future<void> playFailure() async {
     try {
-      await _player.stop();
-      await _player.setVolume(0.60);
-      await _player.play(AssetSource('sounds/failure.wav'));
+      await _ref.read(audioManagerProvider).play(AudioEvent.wrongGuess);
     } catch (e) {
       debugPrint('[SoundService] playFailure error: $e');
     }
   }
 
-  /// Cleans up player resources.
   void dispose() {
     try {
       _player.dispose();
@@ -64,9 +54,9 @@ class SoundService {
   }
 }
 
-/// Global provider for [SoundService].
+/// Global provider for legacy [SoundService].
 final soundServiceProvider = Provider<SoundService>((ref) {
-  final service = SoundService();
+  final service = SoundService(ref);
   ref.onDispose(service.dispose);
   return service;
 });
