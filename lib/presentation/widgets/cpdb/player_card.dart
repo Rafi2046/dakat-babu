@@ -70,92 +70,102 @@ class PlayerCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          width: double.infinity,
-          height: double.infinity,
-          alignment: Alignment.center,
-          padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: borderColor,
-              width: selected ? 2.5 : 1,
-            ),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: AppColors.raja.withValues(alpha: 0.45),
-                      blurRadius: 12,
-                    ),
-                  ]
-                : null,
-          ),
-          // No Expanded/Flexible — works in GridView cells AND unbounded Columns.
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                alignment: Alignment.center,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final fill = constraints.hasBoundedWidth &&
+                constraints.hasBoundedHeight &&
+                constraints.maxWidth.isFinite &&
+                constraints.maxHeight.isFinite &&
+                constraints.maxHeight < 10000;
+
+            final body = AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              alignment: Alignment.center,
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: borderColor,
+                  width: selected ? 2.5 : 1,
+                ),
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.raja.withValues(alpha: 0.45),
+                          blurRadius: 12,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  CharacterAvatar(
-                    name: name,
-                    assetPath: avatarAsset ??
-                        visibleRole?.badgeAsset ??
-                        visibleRole?.standingAsset,
-                    size: 52,
-                    showRing: selected,
-                    ringColor: borderColor,
+                  Stack(
+                    clipBehavior: Clip.none,
+                    alignment: Alignment.center,
+                    children: [
+                      CharacterAvatar(
+                        name: name,
+                        assetPath: avatarAsset ??
+                            visibleRole?.badgeAsset ??
+                            visibleRole?.standingAsset,
+                        size: 52,
+                        showRing: selected,
+                        ringColor: borderColor,
+                      ),
+                      if (selected)
+                        const Positioned(
+                          right: -4,
+                          top: -4,
+                          child: Icon(
+                            Icons.check_circle,
+                            color: AppColors.raja,
+                            size: 20,
+                          ),
+                        ),
+                      if (isHost)
+                        const Positioned(
+                          left: -4,
+                          bottom: -4,
+                          child: Icon(
+                            Icons.star,
+                            color: AppColors.raja,
+                            size: 16,
+                          ),
+                        ),
+                    ],
                   ),
-                  if (selected)
-                    const Positioned(
-                      right: -4,
-                      top: -4,
-                      child: Icon(
-                        Icons.check_circle,
-                        color: AppColors.raja,
-                        size: 20,
-                      ),
+                  const SizedBox(height: 6),
+                  Text(
+                    name,
+                    style: AppTextStyles.bodyMedium(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                  if (isYou)
+                    Text(
+                      'YOU',
+                      style:
+                          AppTextStyles.caption(color: AppColors.secondary),
                     ),
-                  if (isHost)
-                    const Positioned(
-                      left: -4,
-                      bottom: -4,
-                      child: Icon(
-                        Icons.star,
-                        color: AppColors.raja,
-                        size: 16,
-                      ),
+                  Text(
+                    _statusLabel(),
+                    style: AppTextStyles.caption(color: borderColor),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (score != null)
+                    Text(
+                      '$score',
+                      style: AppTextStyles.heading3(color: AppColors.raja),
                     ),
                 ],
               ),
-              const SizedBox(height: 6),
-              Text(
-                name,
-                style: AppTextStyles.bodyMedium(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-              if (isYou)
-                Text(
-                  'YOU',
-                  style: AppTextStyles.caption(color: AppColors.secondary),
-                ),
-              Text(
-                _statusLabel(),
-                style: AppTextStyles.caption(color: borderColor),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (score != null)
-                Text(
-                  '$score',
-                  style: AppTextStyles.heading3(color: AppColors.raja),
-                ),
-            ],
-          ),
+            );
+
+            return fill ? SizedBox.expand(child: body) : body;
+          },
         ),
       ),
     );

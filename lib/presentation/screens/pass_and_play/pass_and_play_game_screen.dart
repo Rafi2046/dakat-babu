@@ -260,9 +260,13 @@ class PassAndPlayGameScreen extends ConsumerWidget {
           Text('Are you sure?', style: AppTextStyles.heading1()),
           AppSpacing.gapVMd,
           if (accused != null)
-            PlayerCard(
-              name: accused.name,
-              state: PlayerCardState.selected,
+            SizedBox(
+              width: 160,
+              height: 190,
+              child: PlayerCard(
+                name: accused.name,
+                state: PlayerCardState.selected,
+              ),
             ),
           AppSpacing.gapVXl,
           GameButton(
