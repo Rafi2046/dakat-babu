@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../di/providers.dart';
-import '../../data/local/player_profile_store.dart';
 
 /// Manages [ThemeMode]. Defaults to dark; persists via [PlayerProfileStore].
 class ThemeNotifier extends Notifier<ThemeMode> {
