@@ -9,8 +9,10 @@ abstract final class AppRoutes {
   static const String howToPlay = '/how-to-play';
   static const String personalScore = '/my-score';
   static const String robot = '/robot';
+  static const String singlePlayer = '/single-player';
   static const String connectionError = '/connection-error';
   static const String lobbyWaiting = '/lobby-waiting';
+  static const String lobbyWaitingRoom = '/lobby-waiting/:roomCode';
 
   static const String lobby = '/lobby/:roomCode';
   static const String gameRound = '/game/:roomCode';
@@ -28,6 +30,7 @@ abstract final class AppRoutes {
   static const String howToPlayName = 'howToPlay';
   static const String personalScoreName = 'personalScore';
   static const String robotName = 'robot';
+  static const String singlePlayerName = 'singlePlayer';
   static const String connectionErrorName = 'connectionError';
   static const String lobbyWaitingName = 'lobbyWaiting';
   static const String lobbyName = 'lobby';
@@ -39,6 +42,8 @@ abstract final class AppRoutes {
 
   static const String paramRoomCode = 'roomCode';
 
+  static String lobbyWaitingPath(String roomCode) =>
+      '/lobby-waiting/${roomCode.trim().toUpperCase()}';
   static String lobbyPath(String roomCode) => '/lobby/$roomCode';
   static String gameRoundPath(String roomCode) => '/game/$roomCode';
   static String resultsPath(String roomCode) => '/results/$roomCode';
