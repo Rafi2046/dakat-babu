@@ -124,12 +124,20 @@ void main() {
       expect(result.isGuessCorrect, isTrue);
       expect(result.policeGuessPlayerId, round.chorPlayerId);
 
-      // Verify points were distributed to Raja and Mantri
+      // Verify CPDB +1: only Police scores on a correct catch.
       final updatedPlayers = await roomRepository.getPlayers(room.roomCode);
-      final raja = updatedPlayers.firstWhere((p) => p.id == round.rajaPlayerId);
-      final mantri = updatedPlayers.firstWhere((p) => p.id == round.mantriPlayerId);
-      expect(raja.score, AppConstants.rajaPoints);
-      expect(mantri.score, AppConstants.mantriPoints);
+      final police =
+          updatedPlayers.firstWhere((p) => p.id == round.policePlayerId);
+      final babu =
+          updatedPlayers.firstWhere((p) => p.id == round.babuPlayerId);
+      final dakat =
+          updatedPlayers.firstWhere((p) => p.id == round.dakatPlayerId);
+      final chor =
+          updatedPlayers.firstWhere((p) => p.id == round.chorPlayerId);
+      expect(police.score, AppConstants.policeCorrectPoints);
+      expect(babu.score, 0);
+      expect(dakat.score, 0);
+      expect(chor.score, 0);
     });
 
     test('Host can cancel and delete the room', () async {

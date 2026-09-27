@@ -79,17 +79,17 @@ class FakeRoomRepository implements RoomRepository {
 
 void main() {
   group('Validators Unit Tests', () {
-    test('validateRoomCode accepts valid 6-char alphanumeric', () {
-      expect(Validators.validateRoomCode('ABC123'), isNull);
-      expect(Validators.validateRoomCode('XYZ987'), isNull);
+    test('validateRoomCode accepts valid ${AppConstants.roomCodeLength}-char alphanumeric', () {
+      expect(Validators.validateRoomCode('ABC12'), isNull);
+      expect(Validators.validateRoomCode('XYZ98'), isNull);
     });
 
     test('validateRoomCode rejects invalid lengths or characters', () {
       expect(Validators.validateRoomCode(null), isNotNull);
       expect(Validators.validateRoomCode(''), isNotNull);
       expect(Validators.validateRoomCode('ABC1'), isNotNull);
-      expect(Validators.validateRoomCode('ABC1234'), isNotNull);
-      expect(Validators.validateRoomCode('ABC@12'), isNotNull);
+      expect(Validators.validateRoomCode('ABC123'), isNotNull);
+      expect(Validators.validateRoomCode('AB@12'), isNotNull);
     });
 
     test('validatePlayerName validates 2-15 characters', () {
@@ -101,18 +101,18 @@ void main() {
   });
 
   group('GameRole Rules & Points', () {
-    test('role points match official rules', () {
-      expect(GameRole.raja.points, 1000);
-      expect(GameRole.mantri.points, 800);
-      expect(GameRole.police.points, 500);
-      expect(GameRole.chor.points, 500);
+    test('role points match CPDB +1 rules', () {
+      expect(GameRole.police.points, AppConstants.policeCorrectPoints);
+      expect(GameRole.babu.points, AppConstants.wrongGuessSuspectPoints);
+      expect(GameRole.chor.points, AppConstants.wrongGuessSuspectPoints);
+      expect(GameRole.dakat.points, AppConstants.wrongGuessSuspectPoints);
     });
 
     test('role display names are formatted', () {
-      expect(GameRole.raja.displayName, contains('Raja'));
-      expect(GameRole.mantri.displayName, contains('Mantri'));
       expect(GameRole.police.displayName, contains('Police'));
+      expect(GameRole.babu.displayName, contains('Babu'));
       expect(GameRole.chor.displayName, contains('Chor'));
+      expect(GameRole.dakat.displayName, contains('Dakat'));
     });
   });
 

@@ -7,12 +7,10 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/routes/app_routes.dart';
-import '../../../core/utils/extensions.dart';
 import '../../../domain/game/badge_catalog.dart';
 import '../../../domain/game/game_role.dart';
 import '../../viewmodels/pass_and_play_viewmodel.dart';
 import '../../widgets/cpdb/cpdb.dart';
-import '../../widgets/cpdb/game_card_placeholder.dart';
 
 /// Pass & Pass match — privacy handoff + police accuse + results.
 class PassAndPlayGameScreen extends ConsumerWidget {

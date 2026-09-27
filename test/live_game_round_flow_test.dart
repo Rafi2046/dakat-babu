@@ -71,27 +71,27 @@ void main() {
 
       // Fetch players to see their assigned roles
       final updatedPlayers = await roomRepo.getPlayers(roomCode);
-      PlayerModel? raja, mantri, police, chor;
+      PlayerModel? babu, dakat, police, chor;
 
       print('\n[Step 5] Role Reveal Verification:');
       for (final p in updatedPlayers) {
         print('   - ${p.name}: ${p.role?.displayName ?? 'None'} (+${p.role?.points ?? 0} pts)');
-        if (p.id == round1.rajaPlayerId) raja = p;
-        if (p.id == round1.mantriPlayerId) mantri = p;
+        if (p.id == round1.babuPlayerId) babu = p;
+        if (p.id == round1.dakatPlayerId) dakat = p;
         if (p.id == round1.policePlayerId) police = p;
         if (p.id == round1.chorPlayerId) chor = p;
       }
 
-      expect(raja, isNotNull);
-      expect(mantri, isNotNull);
+      expect(babu, isNotNull);
+      expect(dakat, isNotNull);
       expect(police, isNotNull);
       expect(chor, isNotNull);
-      print('✅ All 4 distinct roles (Raja, Mantri, Police, Chor) successfully assigned!');
+      print('✅ All 4 distinct roles (Police, Babu, Chor, Dakat) successfully assigned!');
 
       // 4. Police Player Interrogation & Accusation
       print('\n[Step 6] Police (${police!.name}) interrogates suspects...');
-      print('   👑 Raja declared: ${raja!.name} (Immune)');
-      print('   🔍 Suspects: ${mantri!.name} vs ${chor!.name}');
+      print('   👑 Babu declared: ${babu!.name} (visible)');
+      print('   🔍 Suspects among: ${dakat!.name}, ${chor!.name}, others');
       print('   👉 Police accuses ${chor.name} as the Chor!');
 
       final guessResult = await submitGuess(
@@ -119,16 +119,16 @@ void main() {
         print('   #${i + 1}: ${p.name} (${p.role?.displayName}) -> ${p.score} pts');
       }
 
-      final rajaFinal = finalPlayers.firstWhere((p) => p.id == raja!.id);
-      final mantriFinal = finalPlayers.firstWhere((p) => p.id == mantri!.id);
+      final babuFinal = finalPlayers.firstWhere((p) => p.id == babu!.id);
+      final dakatFinal = finalPlayers.firstWhere((p) => p.id == dakat!.id);
       final policeFinal = finalPlayers.firstWhere((p) => p.id == police!.id);
       final chorFinal = finalPlayers.firstWhere((p) => p.id == chor!.id);
 
-      expect(rajaFinal.score >= 1000, isTrue);
-      expect(mantriFinal.score >= 800, isTrue);
-      expect(policeFinal.score >= 500, isTrue);
+      expect(policeFinal.score, equals(AppConstants.policeCorrectPoints));
       expect(chorFinal.score, equals(0));
-      print('✅ All scores properly incremented according to official game rules!');
+      expect(babuFinal.score, equals(0));
+      expect(dakatFinal.score, equals(0));
+      print('✅ Scores match CPDB +1 rules (Police +1 on correct catch)!');
 
       // 6. Host starts Next Round (Round 2)
       print('\n[Step 9] Host taps "Start Next Round" (Round 2)...');
