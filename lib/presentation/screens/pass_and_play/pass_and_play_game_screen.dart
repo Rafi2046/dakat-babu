@@ -299,54 +299,48 @@ class PassAndPlayGameScreen extends ConsumerWidget {
   Widget _results(PassAndPlayState state, PassAndPlayViewModel notifier) {
     final correct = state.isGuessCorrect == true;
     return Padding(
-      padding: AppSpacing.screenPadding,
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 14),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            flex: 5,
-            child: SingleChildScrollView(
-              child: ResultFlashCard(
-                isCorrect: correct,
-                title: correct ? 'CORRECT!' : 'WRONG GUESS!',
-                subtitle: correct
-                    ? 'Police found the Chor!'
-                    : 'তুমি ভুলজনকে ধরেছো!',
-                scoreLabel: correct
-                    ? 'Police +800 · Babu +900 · Dakat +600'
-                    : 'Chor +400 · Babu +900 · Dakat +600',
-                characterAsset: correct
-                    ? AppImages.policeStanding
-                    : AppImages.chorStanding,
-              ),
-            ),
+          ResultFlashCard(
+            isCorrect: correct,
+            title: correct ? 'CORRECT!' : 'WRONG GUESS!',
+            subtitle: correct
+                ? 'Police found the Chor!'
+                : 'তুমি ভুলজনকে ধরেছো!',
+            scoreLabel: correct
+                ? 'Police +800 · Babu +900 · Dakat +600'
+                : 'Chor +400 · Babu +900 · Dakat +600',
+            characterAsset: correct
+                ? AppImages.policeStanding
+                : AppImages.chorStanding,
           ),
           const SizedBox(height: 8),
-          Expanded(
-            flex: 4,
-            child: ScoreboardPanel(
-              title: 'ROUND SCORE',
-              rows: [
-                for (var i = 0; i < state.leaderboard.length; i++)
-                  ScoreRow(
-                    rank: i + 1,
-                    name: state.leaderboard[i].name,
-                    score: state.leaderboard[i].totalScore,
-                  ),
-              ],
-            )
-                .animate(delay: 200.ms)
-                .fadeIn(duration: 250.ms)
-                .slideY(begin: 0.1, end: 0, curve: Curves.easeOutBack),
-          ),
-          const SizedBox(height: 8),
+          ScoreboardPanel(
+            title: 'ROUND SCORE',
+            borderRadius: BorderRadius.circular(18),
+            rows: [
+              for (var i = 0; i < state.leaderboard.length; i++)
+                ScoreRow(
+                  rank: i + 1,
+                  name: state.leaderboard[i].name,
+                  score: state.leaderboard[i].totalScore,
+                ),
+            ],
+          )
+              .animate(delay: 180.ms)
+              .fadeIn(duration: 250.ms)
+              .slideY(begin: 0.08, end: 0, curve: Curves.easeOutBack),
+          const Spacer(),
           GameButton(
             label: state.isLastRound ? 'FINAL SCORE' : 'NEXT ROUND',
             onPressed: notifier.nextRound,
           )
-              .animate(delay: 350.ms)
+              .animate(delay: 300.ms)
               .fadeIn(duration: 250.ms)
               .scale(
-                begin: const Offset(0.92, 0.92),
+                begin: const Offset(0.95, 0.95),
                 end: const Offset(1, 1),
                 curve: Curves.easeOutBack,
               ),
