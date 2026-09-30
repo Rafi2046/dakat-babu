@@ -11,7 +11,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import 'game_button.dart';
 
-/// Dramatic correct / wrong flash card with rich animations, sound FX, and confetti in a compact, sleek form.
+/// Dramatic correct / wrong flash card with rich animations, sound FX, and confetti in a grand hero form.
 class ResultFlashCard extends ConsumerStatefulWidget {
   final bool isCorrect;
   final String title;
@@ -99,7 +99,7 @@ class _ResultFlashCardState extends ConsumerState<ResultFlashCard> {
 
     Widget cardContent = Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -107,211 +107,212 @@ class _ResultFlashCardState extends ConsumerState<ResultFlashCard> {
           colors: [
             color.withValues(alpha: 0.18),
             AppColors.surfaceDark,
-            const Color(0xFF0D121B),
+            const Color(0xFF0E131E),
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: color.withValues(alpha: 0.75),
-          width: 1.8,
+          color: color.withValues(alpha: 0.85),
+          width: 2.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.35),
-            blurRadius: 20,
-            spreadRadius: 1,
+            color: color.withValues(alpha: 0.4),
+            blurRadius: 26,
+            spreadRadius: 2,
           ),
           const BoxShadow(
-            color: Colors.black45,
-            blurRadius: 10,
-            offset: Offset(0, 4),
+            color: Colors.black54,
+            blurRadius: 14,
+            offset: Offset(0, 6),
           ),
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header Row: Icon + Title + Subtitle
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: color.withValues(alpha: 0.2),
-                  border: Border.all(
-                    color: color.withValues(alpha: 0.8),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.4),
-                      blurRadius: 10,
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  widget.isCorrect
-                      ? Icons.check_circle_rounded
-                      : Icons.cancel_rounded,
-                  color: color,
-                  size: 24,
-                ),
-              )
-                  .animate()
-                  .scale(
-                    begin: const Offset(0.2, 0.2),
-                    end: const Offset(1.15, 1.15),
-                    duration: 350.ms,
-                    curve: Curves.easeOutBack,
-                  )
-                  .then(delay: 40.ms)
-                  .scale(
-                    begin: const Offset(1.15, 1.15),
-                    end: const Offset(1.0, 1.0),
-                    duration: 120.ms,
-                  ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      widget.title,
-                      style: AppTextStyles.heading2(color: color).copyWith(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.1,
-                        shadows: [
-                          Shadow(
-                            color: color.withValues(alpha: 0.7),
-                            blurRadius: 12,
-                          ),
-                        ],
-                      ),
-                    )
-                        .animate(delay: 80.ms)
-                        .fadeIn(duration: 180.ms)
-                        .scale(
-                          begin: const Offset(0.85, 0.85),
-                          end: const Offset(1, 1),
-                          duration: 250.ms,
-                          curve: Curves.easeOutBack,
-                        ),
-                    Text(
-                      widget.subtitle,
-                      style: AppTextStyles.caption(
-                        color: Colors.white.withValues(alpha: 0.85),
-                      ).copyWith(fontSize: 11.5, fontWeight: FontWeight.w500),
-                    ).animate(delay: 140.ms).fadeIn(duration: 180.ms),
-                  ],
-                ),
+          // Icon badge with glowing background and dynamic pop animation
+          Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withValues(alpha: 0.2),
+              border: Border.all(
+                color: color.withValues(alpha: 0.8),
+                width: 2,
               ),
-            ],
-          ),
-
-          // Middle content: Character + Score Breakdown pill side-by-side
-          if (widget.characterAsset != null || widget.scoreLabel != null) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                if (widget.characterAsset != null)
-                  Container(
-                    width: 48,
-                    height: 52,
-                    alignment: Alignment.center,
-                    child: Image.asset(
-                      widget.characterAsset!,
-                      height: 52,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, _, _) => Icon(
-                        widget.isCorrect ? Icons.local_police : Icons.person,
-                        color: color,
-                        size: 36,
-                      ),
-                    )
-                        .animate(delay: 180.ms)
-                        .slideY(
-                          begin: 0.3,
-                          end: 0,
-                          duration: 350.ms,
-                          curve: Curves.easeOutBack,
-                        )
-                        .fadeIn(duration: 200.ms)
-                        .then(delay: 300.ms)
-                        .shimmer(
-                          duration: 1200.ms,
-                          color: Colors.white.withValues(alpha: 0.25),
-                        ),
-                  ),
-                if (widget.characterAsset != null && widget.scoreLabel != null)
-                  const SizedBox(width: 8),
-                if (widget.scoreLabel != null)
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            color.withValues(alpha: 0.28),
-                            color.withValues(alpha: 0.12),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: color.withValues(alpha: 0.55),
-                          width: 1.2,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            widget.isCorrect
-                                ? Icons.stars_rounded
-                                : Icons.info_outline_rounded,
-                            color: color,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              widget.scoreLabel!,
-                              style: AppTextStyles.caption(color: Colors.white)
-                                  .copyWith(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w700,
-                                shadows: [
-                                  Shadow(
-                                    color: color.withValues(alpha: 0.8),
-                                    blurRadius: 8,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                        .animate(delay: 240.ms)
-                        .scale(
-                          begin: const Offset(0.9, 0.9),
-                          end: const Offset(1, 1),
-                          duration: 300.ms,
-                          curve: Curves.easeOutBack,
-                        )
-                        .fadeIn(duration: 200.ms)
-                        .then(delay: 300.ms)
-                        .shimmer(
-                          duration: 1400.ms,
-                          color: Colors.white.withValues(alpha: 0.3),
-                        ),
-                  ),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.5),
+                  blurRadius: 14,
+                ),
               ],
             ),
+            child: Icon(
+              widget.isCorrect
+                  ? Icons.check_circle_rounded
+                  : Icons.cancel_rounded,
+              color: color,
+              size: 32,
+            ),
+          )
+              .animate()
+              .scale(
+                begin: const Offset(0.2, 0.2),
+                end: const Offset(1.15, 1.15),
+                duration: 350.ms,
+                curve: Curves.easeOutBack,
+              )
+              .then(delay: 40.ms)
+              .scale(
+                begin: const Offset(1.15, 1.15),
+                end: const Offset(1.0, 1.0),
+                duration: 120.ms,
+              )
+              .rotate(
+                begin: widget.isCorrect ? -0.15 : 0.15,
+                end: 0,
+                duration: 350.ms,
+                curve: Curves.easeOutBack,
+              ),
+          const SizedBox(height: 6),
+
+          // Main Title
+          Text(
+            widget.title,
+            textAlign: TextAlign.center,
+            style: AppTextStyles.heading1(color: color).copyWith(
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.2,
+              shadows: [
+                Shadow(
+                  color: color.withValues(alpha: 0.8),
+                  blurRadius: 16,
+                ),
+                const Shadow(
+                  color: Colors.black87,
+                  blurRadius: 6,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+          )
+              .animate(delay: 80.ms)
+              .scale(
+                begin: const Offset(0.8, 0.8),
+                end: const Offset(1, 1),
+                duration: 280.ms,
+                curve: Curves.easeOutBack,
+              )
+              .fadeIn(duration: 180.ms),
+          const SizedBox(height: 2),
+
+          // Subtitle
+          Text(
+            widget.subtitle,
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodyMedium(
+              color: Colors.white.withValues(alpha: 0.9),
+            ).copyWith(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ).animate(delay: 130.ms).fadeIn(duration: 180.ms),
+
+          // Character animation (grand, prominent height)
+          if (widget.characterAsset != null) ...[
+            const SizedBox(height: 6),
+            Image.asset(
+              widget.characterAsset!,
+              height: 80,
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => Icon(
+                widget.isCorrect ? Icons.local_police : Icons.person,
+                color: color,
+                size: 52,
+              ),
+            )
+                .animate(delay: 180.ms)
+                .slideY(
+                  begin: 0.3,
+                  end: 0,
+                  duration: 380.ms,
+                  curve: Curves.easeOutBack,
+                )
+                .fadeIn(duration: 220.ms)
+                .then(delay: 350.ms)
+                .shimmer(
+                  duration: 1200.ms,
+                  color: Colors.white.withValues(alpha: 0.25),
+                ),
+          ],
+
+          // Score payout pill banner with glowing effect and shimmer
+          if (widget.scoreLabel != null) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    color.withValues(alpha: 0.32),
+                    color.withValues(alpha: 0.14),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: color.withValues(alpha: 0.65),
+                  width: 1.4,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    widget.isCorrect
+                        ? Icons.stars_rounded
+                        : Icons.info_outline_rounded,
+                    color: color,
+                    size: 17,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    widget.scoreLabel!,
+                    style: AppTextStyles.caption(color: Colors.white).copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      shadows: [
+                        Shadow(
+                          color: color.withValues(alpha: 0.8),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )
+                .animate(delay: 240.ms)
+                .scale(
+                  begin: const Offset(0.88, 0.88),
+                  end: const Offset(1, 1),
+                  duration: 300.ms,
+                  curve: Curves.easeOutBack,
+                )
+                .fadeIn(duration: 220.ms)
+                .then(delay: 300.ms)
+                .shimmer(
+                  duration: 1400.ms,
+                  color: Colors.white.withValues(alpha: 0.3),
+                ),
           ],
 
           if (widget.onContinue != null) ...[
@@ -367,5 +368,6 @@ class _ResultFlashCardState extends ConsumerState<ResultFlashCard> {
     );
   }
 }
+
 
 
