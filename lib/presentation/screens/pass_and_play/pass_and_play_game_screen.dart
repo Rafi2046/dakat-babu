@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -332,13 +333,23 @@ class PassAndPlayGameScreen extends ConsumerWidget {
                     score: state.leaderboard[i].totalScore,
                   ),
               ],
-            ),
+            )
+                .animate(delay: 200.ms)
+                .fadeIn(duration: 250.ms)
+                .slideY(begin: 0.1, end: 0, curve: Curves.easeOutBack),
           ),
           const SizedBox(height: 8),
           GameButton(
             label: state.isLastRound ? 'FINAL SCORE' : 'NEXT ROUND',
             onPressed: notifier.nextRound,
-          ),
+          )
+              .animate(delay: 350.ms)
+              .fadeIn(duration: 250.ms)
+              .scale(
+                begin: const Offset(0.92, 0.92),
+                end: const Offset(1, 1),
+                curve: Curves.easeOutBack,
+              ),
         ],
       ),
     );

@@ -10,7 +10,6 @@ import '../../../core/audio/audio.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
-import '../../../core/di/providers.dart';
 import 'game_button.dart';
 
 /// Dramatic correct / wrong flash overlay card with rich animations, sound FX, and confetti.
