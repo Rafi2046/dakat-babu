@@ -43,12 +43,12 @@ class ScoreRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         color: highlight
             ? AppColors.primary.withValues(alpha: 0.25)
             : AppColors.glassFill,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: highlight ? AppColors.primary : AppColors.glassBorder,
           width: 1,
@@ -57,8 +57,8 @@ class ScoreRow extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 22,
-            height: 22,
+            width: 24,
+            height: 24,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
@@ -70,18 +70,18 @@ class ScoreRow extends StatelessWidget {
               '$rank',
               style: AppTextStyles.bodyMedium(
                 color: _rankColor(),
-              ).copyWith(fontWeight: FontWeight.w800, fontSize: 12),
+              ).copyWith(fontWeight: FontWeight.w800, fontSize: 13),
             ),
           ),
-          const SizedBox(width: 8),
-          CharacterAvatar(name: name, assetPath: avatarAsset, size: 26),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
+          CharacterAvatar(name: name, assetPath: avatarAsset, size: 28),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               name,
               style: AppTextStyles.bodyMedium(color: Colors.white).copyWith(
                 fontWeight: FontWeight.w600,
-                fontSize: 13.5,
+                fontSize: 14,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -90,11 +90,11 @@ class ScoreRow extends StatelessWidget {
           if (correct != null) _mini('C', correct!, AppColors.success),
           if (wrong != null) _mini('W', wrong!, AppColors.error),
           if (policeTags != null) _mini('P', policeTags!, AppColors.police),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           Text(
             '$score',
             style: AppTextStyles.heading3(color: const Color(0xFFFFD700)).copyWith(
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -119,19 +119,43 @@ class ScoreboardPanel extends StatelessWidget {
   final List<ScoreRow> rows;
   final String title;
   final BorderRadiusGeometry? borderRadius;
+  final bool isExpanded;
 
   const ScoreboardPanel({
     super.key,
     required this.rows,
     this.title = 'SCOREBOARD',
     this.borderRadius,
+    this.isExpanded = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    Widget rowsContent;
+    if (isExpanded) {
+      rowsContent = Expanded(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            for (final row in rows) row,
+          ],
+        ),
+      );
+    } else {
+      rowsContent = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0) const SizedBox(height: 6),
+            rows[i],
+          ],
+        ],
+      );
+    }
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       decoration: BoxDecoration(
         color: AppColors.surfaceDark.withValues(alpha: 0.94),
         borderRadius: borderRadius ??
@@ -140,42 +164,40 @@ class ScoreboardPanel extends StatelessWidget {
         boxShadow: const [
           BoxShadow(
             color: Colors.black26,
-            blurRadius: 10,
+            blurRadius: 12,
             offset: Offset(0, 4),
           ),
         ],
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: isExpanded ? MainAxisSize.max : MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
               Icon(
                 Icons.leaderboard_rounded,
-                size: 13,
+                size: 14,
                 color: AppColors.textLightSecondary,
               ),
-              const SizedBox(width: 5),
+              const SizedBox(width: 6),
               Text(
                 title,
                 style: AppTextStyles.caption().copyWith(
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 1.0,
-                  fontSize: 11,
+                  letterSpacing: 1.1,
+                  fontSize: 11.5,
                   color: AppColors.textLightSecondary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          for (var i = 0; i < rows.length; i++) ...[
-            if (i > 0) const SizedBox(height: 4),
-            rows[i],
-          ],
+          const SizedBox(height: 8),
+          rowsContent,
         ],
       ),
     );
   }
 }
+
 
